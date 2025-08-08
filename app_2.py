@@ -1,4 +1,141 @@
+# -*- coding: utf-8 -*-
+import os
+import time
+import json
+import pickle
+from typing import List, Dict, Tuple, Optional
 
+import numpy as np
+import streamlit as st
+
+# -------------------------
+# Page config + Intro tab content
+# -------------------------
+st.set_page_config(page_title="PA 211 / PEMA RAG — OpenAI vs Gemini vs Both", layout="wide")
+
+INTRO_MD = """
+# PA 211 / PEMA RAG — Demo Guide
+
+This demo answers questions using RAG (Retrieval-Augmented Generation) over the PDFs in the repo root and optionally an auxiliary QA memory file (PA211_expanded_dataset.json). It lets you compare OpenAI, Gemini, or a merged Both view.
+
+---
+
+## What’s in this demo?
+
+- PDF ingestion: All .pdf files at the repo root are loaded and chunked.
+- Two vector stores: One per model family (OpenAI and Gemini). Vectors are saved as .pkl files so subsequent runs are fast.
+- Multiple retrieval modes (pipelines):
+  - Standard: vanilla chunk retrieval (fast, precise).
+  - Contextual: context-enriched chunks (each chunk sees its neighbors) -> better recall.
+  - Query Transformation: rewrite / step-back / decompose, then retrieve (recall boost; slightly slower).
+  - Adaptive: heuristics classify the query (Factual / Analytical / Opinion / Contextual) to decide which strategy to apply.
+  - Combined: merge Standard + Contextual + (optional transforms) for a strong, balanced top-K set.
+- QA memory (optional): A small side index built from PA211_expanded_dataset.json. Its top hint can be added to the prompt (as a nudge), while the final answer must still be grounded in PDFs.
+- Comparison: Run OpenAI, Gemini, Both (merged) and see answers side-by-side with retrieval scores.
+
+---
+
+## How it’s laid out
+
+Top controls
+- Retrieval mode selector (Standard / Contextual / Query Transformation / Adaptive / Combined)
+- Options:
+  - Enable transforms in Combined mode
+  - Use QA memory (PA211_expanded_dataset.json) for hints
+- Engine selector:
+  - OpenAI, Gemini, Compare: OpenAI vs Gemini, Compare: OpenAI vs Gemini vs Both
+- Top-K slider and a question text area.
+- Buttons to Rebuild/Refresh vectors (OpenAI/Gemini, Standard/Contextual, QA).
+  The first run is the only expensive one — after pickles exist, it is instant.
+
+Results panel
+- Columns for each engine you chose (OpenAI / Gemini / Both).
+- For each engine:
+  - Answer
+  - Avg similarity (top-K) — the mean cosine similarity of the retrieved chunks.
+  - Answer to Context similarity:
+    - Centroid: similarity between the answer embedding and the centroid of retrieved chunk embeddings.
+    - Max: max similarity between the answer embedding and any single retrieved chunk.
+  - Show retrieved context (expander) — the exact chunks and their similarity.
+
+---
+
+## End-to-end workflow
+
+PDFs at repo root -> extract & chunk -> (standard/contextual chunks)
+Optionally: build QA memory from PA211_expanded_dataset.json
+
+Embed with OpenAI + Gemini -> save as .pkl -> vector stores
+
+Retrieval pipelines (Standard / Contextual / Query-Transform / Adaptive / Combined)
+-> retrieve top-K (+ optional QA hint) -> build grounded prompt
+-> LLM (OpenAI / Gemini / Both) -> Answer + similarity metrics
+
+---
+
+## Key ideas
+
+- Chunking: PDFs are split into overlapping chunks (default ~900 chars with 250 overlap).
+- Contextual chunks: Each chunk is expanded with its neighbors to boost recall for cross-page topics.
+- Two independent vector stores: OpenAI embeddings power OpenAI retrieval; Gemini embeddings power Gemini retrieval. This isolates model behavior fairly.
+- QA memory: Used as a hint (optional) to nudge the model; final answer must still come from the PDFs.
+- Similarity scores: Quick sanity checks of how well the answer aligns with the retrieved evidence.
+
+---
+
+## Retrieval modes (pipelines)
+
+- Standard
+  Single query -> retrieve top-K from standard chunks -> answer. Use when you want fast, precise lookups.
+
+- Contextual
+  Single query -> retrieve top-K from contextual chunks -> answer. Use when answers likely span multiple pages/sections.
+
+- Query Transformation
+  Query -> rewrite / step-back / decompose -> retrieve for each -> merge top-K -> answer.
+  Use for ambiguous or complex questions; costs a few extra LLM calls.
+
+- Adaptive
+  Heuristic classify (Factual / Analytical / Opinion / Contextual) -> choose a strategy (rewrite, decompose, etc.) and pull from both standard + contextual stores -> answer.
+  Good default when you don’t know the shape of the question.
+
+- Combined
+  Merge Standard + Contextual results; optional transforms. Often robust with reasonable cost.
+
+---
+
+## Compare OpenAI vs Gemini vs Both
+
+- OpenAI: uses OpenAI embeddings + OpenAI generation.
+- Gemini: uses Gemini embeddings + Gemini generation.
+- Both (merged): merges contexts from both stores and synthesizes a single answer (uses OpenAI if available, else Gemini).
+
+Why compare?
+Different embedding spaces and LLMs will surface different passages and phrasing. Side-by-side can reveal coverage gaps or strengths.
+
+---
+
+## Performance notes
+
+- Prebuilt vectors: First build can take minutes; after that, it is instant. Commit the .pkl files with the repo for demos.
+- Gemini embedding is per-text; OpenAI supports batching. That is why OpenAI builds usually run faster.
+- Use Contextual or Combined for better recall; start with Standard if you need speed.
+- Turn off QA memory if you want purely PDF-grounded behavior with zero extra retrieval.
+
+---
+
+## Troubleshooting
+
+- "I don’t have enough info." -> Try Contextual or Combined, bump Top-K, or enable Query Transformation.
+- Empty or low similarity -> The answer likely is not in the PDFs; rephrase the question, or confirm the document actually contains it.
+- Slow first run -> Build/Refresh vectors once, then commit .pkl to the repo.
+"""
+
+# Tabs up front
+tabs = st.tabs(["Introduction", "RAG Demo"])
+
+with tabs[0]:
+    st.markdown(INTRO_MD)
 **Key ideas:**
 - **Chunking**: PDFs are split into overlapping chunks (default ~900 chars with 250 overlap).  
 - **Contextual chunks**: Each chunk is expanded with its neighbors to boost recall for cross-page topics.
