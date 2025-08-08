@@ -19,5 +19,8 @@ transformers
 accelerate
 google-generativeai
 python-dotenv
+streamlit
+google-generativeai
+openai>=1.30.0
 
 
