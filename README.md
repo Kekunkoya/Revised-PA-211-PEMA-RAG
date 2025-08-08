@@ -14,6 +14,8 @@ Combined — Merges Standard + Contextual (+ optional transforms).
 Vector Stores — Separate prebuilt stores for OpenAI and Gemini embeddings for speed.
 Optional QA Memory — Small hint index from PA211_expanded_dataset.json to enhance context.
 Similarity Scoring — Reports cosine similarity and answer-to-context alignment for each output.
+
+-----
 🔹 Data Sources
 The system indexes multiple authoritative PA 211 / PEMA documents, such as:
 211 Responds to Urgent Needs.pdf
@@ -21,12 +23,17 @@ PA 211 Disaster Community Resources.pdf
 PEMA.pdf
 Ready.gov Disaster Preparedness Guide for Older Adults.pdf
 Substantial Damages Toolkit.pdf
+
+------
 🔹 Workflow
 Ingest PDFs → extract text → chunk (900 chars, 250 overlap).
 Build vector stores for OpenAI & Gemini embeddings.
 Retrieve top-K results per query using selected pipeline(s).
 Generate answers via OpenAI, Gemini, or Both mode.
 Display metrics & retrieved context for transparency.
+
+
+-----
 🔹 Why It Matters
 During disasters, speed and accuracy save lives. This RAG platform enables PA 211 and PEMA to:
 Provide verified, consistent answers from trusted documents.
