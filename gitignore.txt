@@ -5,6 +5,12 @@ __pycache__/
 
 # Ignore virtual environments
 .env/
+venv/
+rag_venv/
+rag_env/
+
+# Ignore environment variables file
+.env
 
 # Ignore system files
 .DS_Store
@@ -24,3 +30,6 @@ build/
 .vscode/
 .idea/
 *.sublime-workspace
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
