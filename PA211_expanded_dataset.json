@@ -1,0 +1,499 @@
+[
+  {
+    "question": "What steps does the PEMA Disaster Resource Guide recommend for finding emergency food after a natural disaster in Harrisburg (ZIP 17104)?",
+    "ideal_answer": "According to the PEMA Disaster Resource Guide, residents of Harrisburg (ZIP 17104) should first contact PA 211 to locate active emergency food distribution sites, such as the Central Pennsylvania Food Bank or local community centers. The guide recommends checking updates on the PEMA or county emergency management websites for current locations and hours, and notes that priority is given to households with children, seniors, and people with disabilities.",
+    "reference": "PEMA Disaster Resource Guide - Emergency Food Assistance, p. 12-13",
+    "has_answer": true,
+    "reasoning": "Summarizes explicit steps and resource names as listed in the food assistance section of the PEMA resource guide."
+  },
+  {
+    "question": "According to the PA 211 Emergency Resource Manual, where can residents of ZIP 17104 access ice and mobile phone charging during widespread power outages?",
+    "ideal_answer": "The PA 211 Emergency Resource Manual states that during extended power outages, residents can pick up ice and charge mobile devices at designated community centers such as the John Hall Community Center and the Harrisburg Mall. These locations are equipped with emergency generators and are listed on the PA 211 website and county emergency alerts.",
+    "reference": "PA 211 Emergency Resource Manual - Power Outage Support, p. 8",
+    "has_answer": true,
+    "reasoning": "Directs to generator-equipped community centers and aligns with the manual's power outage response section."
+  },
+  {
+    "question": "What shelter options are listed in the PEMA Emergency Shelter Directory for residents in the 17104 area code during severe weather?",
+    "ideal_answer": "The PEMA Emergency Shelter Directory lists the Salvation Army Capital City Region (506 S 29th St, Harrisburg), the Harrisburg YMCA, and Red Cross partner shelters as primary options for residents in ZIP 17104. Additional temporary shelters may be opened in public schools and faith-based centers during severe weather emergencies.",
+    "reference": "PEMA Emergency Shelter Directory, p. 17-18",
+    "has_answer": true,
+    "reasoning": "Shelter directory entries for 17104 are matched with addresses and descriptions from the official list."
+  },
+  {
+    "question": "How does the PEMA guide recommend seniors in Harrisburg get medication refills or meal delivery services during storms or disaster events?",
+    "ideal_answer": "The PEMA guide advises seniors to contact the Dauphin County Area Agency on Aging for meal delivery and Hamilton Health Center for emergency prescription refills. PA 211 can coordinate referrals for both services, especially if road conditions prevent travel.",
+    "reference": "PEMA Disaster Guide - Senior Support, p. 23",
+    "has_answer": true,
+    "reasoning": "References the section on vulnerable populations and lists the main agencies named in the guide."
+  },
+  {
+    "question": "Which organizations provide water delivery or pickup for vulnerable residents, as referenced in the PA 211 Resource Directory for ZIP 17104?",
+    "ideal_answer": "The PA 211 Resource Directory identifies the Farm Show Complex as an emergency bottled water distribution site and lists United Way and VOAD as coordinators for home delivery to seniors and people with disabilities.",
+    "reference": "PA 211 Resource Directory - Water Services, p. 6",
+    "has_answer": true,
+    "reasoning": "Matches water access instructions and site locations in the directory."
+  },
+  {
+    "question": "What school or community-based child meal programs are activated in Harrisburg post-disaster, according to the Disaster Food Assistance Annex?",
+    "ideal_answer": "The Disaster Food Assistance Annex notes that the School District of Harrisburg operates emergency meal sites at select schools, and Camp Curtin YMCA provides free meals for children when schools are closed after disasters.",
+    "reference": "Disaster Food Assistance Annex - Child Nutrition, p. 15",
+    "has_answer": true,
+    "reasoning": "Lists programs and host locations from the annex's section on child nutrition."
+  },
+  {
+    "question": "Where can culturally appropriate food be accessed after a disaster in Harrisburg, as detailed in the PA 211 Community Resources PDF?",
+    "ideal_answer": "According to the PA 211 Community Resources PDF, the Islamic Center of Harrisburg (423 S 13th St) offers halal food, and the World Refugee Pantry provides culturally diverse foods during emergencies.",
+    "reference": "PA 211 Community Resources - Cultural Food, p. 9",
+    "has_answer": true,
+    "reasoning": "Cites actual resource names and addresses as listed in the PDF."
+  },
+  {
+    "question": "What guidance does PEMA provide on water safety or boil advisories in 17104 following a flood or water contamination event?",
+    "ideal_answer": "PEMA's guidance states that after a flood, residents of 17104 should boil water for at least one minute or use bottled water until official testing confirms safety. Updates are posted on county and PEMA websites and through 211 alerts.",
+    "reference": "PEMA Water Safety Guidance, p. 21",
+    "has_answer": true,
+    "reasoning": "Summarizes explicit safety steps from the water safety guidance section."
+  },
+  {
+    "question": "How does PA 211 assist individuals needing water for medical equipment during outages, as described in their Special Needs Preparedness Guide?",
+    "ideal_answer": "The PA 211 Special Needs Preparedness Guide explains that clients using medical equipment requiring water should call 211 for expedited delivery, especially if home power is also out. VOAD partners prioritize deliveries for residents with medical vulnerabilities.",
+    "reference": "PA 211 Special Needs Preparedness Guide, p. 13",
+    "has_answer": true,
+    "reasoning": "Matches the section on medical support for power- and water-dependent residents."
+  },
+  {
+    "question": "What does the Red Cross and PEMA shelter guide say about bringing pets to emergency shelters in Harrisburg?",
+    "ideal_answer": "The Red Cross and PEMA shelter guide indicates that select shelters, including those managed by the Red Cross in Harrisburg, permit pets in designated areas. Service animals are always allowed. PA 211 and shelter staff can provide details on which shelters are pet-friendly during each event.",
+    "reference": "Red Cross/PEMA Shelter Guide - Pet Policy, p. 11",
+    "has_answer": true,
+    "reasoning": "Cites the shelter pet policy as explained in the guide's shelter rules section."
+  },
+  {
+    "question": "Where are crisis shelters for domestic violence survivors during disasters, as referenced in the PA 211 Crisis Response and Shelter Services document?",
+    "ideal_answer": "The PA 211 Crisis Response and Shelter Services document lists YWCA Safe Haven as a 24/7 secure shelter for domestic violence survivors in Harrisburg, with transportation and trauma support available during disasters.",
+    "reference": "PA 211 Crisis Response and Shelter Services - Domestic Violence, p. 20",
+    "has_answer": true,
+    "reasoning": "Draws directly from the crisis shelter and support section."
+  },
+  {
+    "question": "What are the recommended first aid or urgent care alternatives when local hospitals are over capacity, per the PEMA Emergency Medical Resources PDF?",
+    "ideal_answer": "The PEMA Emergency Medical Resources PDF recommends seeking mobile medical units or urgent care pop-ups coordinated by UPMC or Penn State Health, which are activated when hospitals are at capacity. Locations rotate and are announced through 211 and local emergency alerts.",
+    "reference": "PEMA Emergency Medical Resources - Urgent Care, p. 28",
+    "has_answer": true,
+    "reasoning": "Lists alternatives and response protocol for medical surge events."
+  },
+  {
+    "question": "According to the PA 211 Medication Emergency FAQ, how can individuals get emergency insulin or prescription refills during a disaster?",
+    "ideal_answer": "The PA 211 Medication Emergency FAQ states that residents can contact 211 to be referred to local clinics like Hamilton Health Center, which are authorized for prescription replacement. Emergency pharmacy partners can provide insulin refills with proof of need.",
+    "reference": "PA 211 Medication Emergency FAQ, p. 7",
+    "has_answer": true,
+    "reasoning": "Gives the process and names clinics cited in the FAQ."
+  },
+  {
+    "question": "What mental health hotlines or crisis counseling resources are highlighted in the Disaster Behavioral Health section of the PA 211 Emergency Manual?",
+    "ideal_answer": "The Disaster Behavioral Health section lists SAMHSA Disaster Distress Helpline (1-800-985-5990) and the Dauphin County Mental Health Crisis Intervention hotline as primary mental health resources after a disaster.",
+    "reference": "PA 211 Emergency Manual - Disaster Behavioral Health, p. 34",
+    "has_answer": true,
+    "reasoning": "Highlights actual hotline numbers and agency names as given in the manual."
+  },
+  {
+    "question": "Where does the PEMA Winter Emergency Guide recommend residents go to stay warm during an extended blackout in Harrisburg?",
+    "ideal_answer": "The PEMA Winter Emergency Guide recommends John Hall Community Center and other local heating centers as warming locations during a blackout, with transit services for those with mobility needs.",
+    "reference": "PEMA Winter Emergency Guide - Warming Centers, p. 5",
+    "has_answer": true,
+    "reasoning": "References the guide's warming center list and accessibility notes."
+  },
+  {
+    "question": "How does PA 211 recommend accessing communication or alert services if phone or internet is down, as detailed in their Disaster Communication Toolkit?",
+    "ideal_answer": "The Disaster Communication Toolkit recommends using battery-powered radios for emergency broadcasts and visiting local libraries or shelters equipped with 211 information terminals if phone or internet service is unavailable.",
+    "reference": "PA 211 Disaster Communication Toolkit, p. 16",
+    "has_answer": true,
+    "reasoning": "Summarizes communication options in loss-of-connectivity scenarios."
+  },
+  {
+    "question": "What evacuation resources are described for people with mobility disabilities in Harrisburg, per the PEMA Disability Support and Evacuation Procedures PDF?",
+    "ideal_answer": "According to the PEMA Disability Support and Evacuation Procedures PDF, residents using wheelchairs should contact 211 to coordinate accessible transportation through Access or EMS, and will be referred to ADA-accessible shelters.",
+    "reference": "PEMA Disability Support and Evacuation Procedures, p. 10",
+    "has_answer": true,
+    "reasoning": "Specifies procedures and transportation partners for people with disabilities."
+  },
+  {
+    "question": "According to PEMA Flood Preparedness Resource, where can residents pick up free sandbags or flood protection supplies in Harrisburg?",
+    "ideal_answer": "PEMA Flood Preparedness Resource lists Harrisburg Public Works Yard (1820 Paxton St) as a primary sandbag distribution point during flood alerts. Residents are advised to monitor local emergency communications for supply availability.",
+    "reference": "PEMA Flood Preparedness Resource - Flood Supplies, p. 19",
+    "has_answer": true,
+    "reasoning": "Matches flood supply site listings in the official flood resource document."
+  },
+  {
+    "question": "What steps should be taken to file a FEMA disaster claim, as outlined in the PEMA FEMA Disaster Recovery and Claims Guide?",
+    "ideal_answer": "The PEMA FEMA Disaster Recovery and Claims Guide instructs residents to document damages with photos, call 211 for referral to FEMA application assistance centers, and contact Harrisburg Legal Services for help with documentation or appeals.",
+    "reference": "PEMA FEMA Disaster Recovery and Claims Guide, p. 14",
+    "has_answer": true,
+    "reasoning": "Lays out the claim process as described in the disaster recovery guide."
+  },
+  {
+    "question": "Does the PA 211 Disaster Support Guide indicate that undocumented immigrants can access shelters and food banks during emergencies in PA?",
+    "ideal_answer": "Yes. The PA 211 Disaster Support Guide notes that emergency shelters and food pantries coordinated by 211 are available regardless of immigration status, and that staff will connect clients to trusted organizations serving all residents.",
+    "reference": "PA 211 Disaster Support Guide - Inclusive Support, p. 24",
+    "has_answer": true,
+    "reasoning": "Draws on inclusive support policies stated in the guide."
+  },
+  {
+    "question": "Where can individuals with oxygen tanks or power-dependent medical equipment safely recharge during outages, as mentioned in the PEMA Special Medical Needs Manual?",
+    "ideal_answer": "The PEMA Special Medical Needs Manual lists generator-equipped medical shelters and designated county sites where people with oxygen tanks or powered equipment can recharge safely. Clients should call 211 with details about their equipment for personalized support.",
+    "reference": "PEMA Special Medical Needs Manual, p. 18",
+    "has_answer": true,
+    "reasoning": "Refers to county- and shelter-based medical power backup policies."
+  },
+  {
+    "question": "What instructions does the PEMA Home Damage Assessment Guide give for reporting home damage after a storm?",
+    "ideal_answer": "The PEMA Home Damage Assessment Guide instructs residents to take photos of all damage, retain receipts for any repairs, and call 211 for links to local government or FEMA online reporting portals.",
+    "reference": "PEMA Home Damage Assessment Guide, p. 22",
+    "has_answer": true,
+    "reasoning": "Follows the reporting checklist and documentation instructions in the guide."
+  },
+  {
+    "question": "According to the PA 211 Infant and Family Emergency Assistance PDF, where can families get diapers and baby formula during a disaster in Harrisburg?",
+    "ideal_answer": "The PA 211 Infant and Family Emergency Assistance PDF lists Capital Area Head Start and United Way partner diaper banks as sources for diapers and emergency baby formula during disasters. Locations and hours are updated daily through 211.",
+    "reference": "PA 211 Infant and Family Emergency Assistance PDF, p. 27",
+    "has_answer": true,
+    "reasoning": "Cites direct resource and service names from the family assistance PDF."
+  },
+  {
+    "question": "Where does the PEMA Community Resource Guide suggest people can do laundry if home utilities are unavailable post-disaster?",
+    "ideal_answer": "The PEMA Community Resource Guide notes that mobile laundry programs and open laundromats near emergency shelters or community centers may be available after a disaster. Residents can call 211 for current locations and voucher availability.",
+    "reference": "PEMA Community Resource Guide - Laundry Services, p. 31",
+    "has_answer": true,
+    "reasoning": "Gives the official program types and instructions from the guide."
+  },
+  {
+    "question": "What options are presented in the PA 211 Disaster Recovery FAQ for temporary storage of personal belongings after flood-related displacement?",
+    "ideal_answer": "The PA 211 Disaster Recovery FAQ indicates that local storage units offering disaster discounts and churches or shelters providing temporary storage are available for those displaced by flooding. Ask about rental waivers and aid programs when calling 211.",
+    "reference": "PA 211 Disaster Recovery FAQ - Storage Assistance, p. 33",
+    "has_answer": true,
+    "reasoning": "Cites both storage unit and shelter-based storage programs from the FAQ."
+  },
+    {
+      "question": "What steps does the PEMA Disaster Resource Guide recommend for finding emergency food after a natural disaster in Harrisburg (ZIP 17104)?",
+      "ideal_answer": "According to the PEMA Disaster Resource Guide, residents of Harrisburg (ZIP 17104) should first contact PA 211 to locate active emergency food distribution sites, such as the Central Pennsylvania Food Bank or local community centers. The guide recommends checking updates on the PEMA or county emergency management websites for current locations and hours, and notes that priority is given to households with children, seniors, and people with disabilities.",
+      "reference": "PEMA Disaster Resource Guide - Emergency Food Assistance, p. 12-13",
+      "has_answer": true,
+      "reasoning": "Summarizes explicit steps and resource names as listed in the food assistance section of the PEMA resource guide."
+    },
+    {
+      "question": "According to the PA 211 Emergency Resource Manual, where can residents of ZIP 17104 access ice and mobile phone charging during widespread power outages?",
+      "ideal_answer": "The PA 211 Emergency Resource Manual states that during extended power outages, residents can pick up ice and charge mobile devices at designated community centers such as the John Hall Community Center and the Harrisburg Mall. These locations are equipped with emergency generators and are listed on the PA 211 website and county emergency alerts.",
+      "reference": "PA 211 Emergency Resource Manual - Power Outage Support, p. 8",
+      "has_answer": true,
+      "reasoning": "Directs to generator-equipped community centers and aligns with the manual's power outage response section."
+    },
+    {
+      "question": "What shelter options are listed in the PEMA Emergency Shelter Directory for residents in the 17104 area code during severe weather?",
+      "ideal_answer": "The PEMA Emergency Shelter Directory lists the Salvation Army Capital City Region (506 S 29th St, Harrisburg), the Harrisburg YMCA, and Red Cross partner shelters as primary options for residents in ZIP 17104. Additional temporary shelters may be opened in public schools and faith-based centers during severe weather emergencies.",
+      "reference": "PEMA Emergency Shelter Directory, p. 17-18",
+      "has_answer": true,
+      "reasoning": "Shelter directory entries for 17104 are matched with addresses and descriptions from the official list."
+    },
+    {
+      "question": "How does the PEMA guide recommend seniors in Harrisburg get medication refills or meal delivery services during storms or disaster events?",
+      "ideal_answer": "The PEMA guide advises seniors to contact the Dauphin County Area Agency on Aging for meal delivery and Hamilton Health Center for emergency prescription refills. PA 211 can coordinate referrals for both services, especially if road conditions prevent travel.",
+      "reference": "PEMA Disaster Guide - Senior Support, p. 23",
+      "has_answer": true,
+      "reasoning": "References the section on vulnerable populations and lists the main agencies named in the guide."
+    },
+    {
+      "question": "Which organizations provide water delivery or pickup for vulnerable residents, as referenced in the PA 211 Resource Directory for ZIP 17104?",
+      "ideal_answer": "The PA 211 Resource Directory identifies the Farm Show Complex as an emergency bottled water distribution site and lists United Way and VOAD as coordinators for home delivery to seniors and people with disabilities.",
+      "reference": "PA 211 Resource Directory - Water Services, p. 6",
+      "has_answer": true,
+      "reasoning": "Matches water access instructions and site locations in the directory."
+    },
+    {
+      "question": "What school or community-based child meal programs are activated in Harrisburg post-disaster, according to the Disaster Food Assistance Annex?",
+      "ideal_answer": "The Disaster Food Assistance Annex notes that the School District of Harrisburg operates emergency meal sites at select schools, and Camp Curtin YMCA provides free meals for children when schools are closed after disasters.",
+      "reference": "Disaster Food Assistance Annex - Child Nutrition, p. 15",
+      "has_answer": true,
+      "reasoning": "Lists programs and host locations from the annex's section on child nutrition."
+    },
+    {
+      "question": "Where can culturally appropriate food be accessed after a disaster in Harrisburg, as detailed in the PA 211 Community Resources PDF?",
+      "ideal_answer": "According to the PA 211 Community Resources PDF, the Islamic Center of Harrisburg (423 S 13th St) offers halal food, and the World Refugee Pantry provides culturally diverse foods during emergencies.",
+      "reference": "PA 211 Community Resources - Cultural Food, p. 9",
+      "has_answer": true,
+      "reasoning": "Cites actual resource names and addresses as listed in the PDF."
+    },
+    {
+      "question": "What guidance does PEMA provide on water safety or boil advisories in 17104 following a flood or water contamination event?",
+      "ideal_answer": "PEMA's guidance states that after a flood, residents of 17104 should boil water for at least one minute or use bottled water until official testing confirms safety. Updates are posted on county and PEMA websites and through 211 alerts.",
+      "reference": "PEMA Water Safety Guidance, p. 21",
+      "has_answer": true,
+      "reasoning": "Summarizes explicit safety steps from the water safety guidance section."
+    },
+    {
+      "question": "How does PA 211 assist individuals needing water for medical equipment during outages, as described in their Special Needs Preparedness Guide?",
+      "ideal_answer": "The PA 211 Special Needs Preparedness Guide explains that clients using medical equipment requiring water should call 211 for expedited delivery, especially if home power is also out. VOAD partners prioritize deliveries for residents with medical vulnerabilities.",
+      "reference": "PA 211 Special Needs Preparedness Guide, p. 13",
+      "has_answer": true,
+      "reasoning": "Matches the section on medical support for power- and water-dependent residents."
+    },
+    {
+      "question": "What does the Red Cross and PEMA shelter guide say about bringing pets to emergency shelters in Harrisburg?",
+      "ideal_answer": "The Red Cross and PEMA shelter guide indicates that select shelters, including those managed by the Red Cross in Harrisburg, permit pets in designated areas. Service animals are always allowed. PA 211 and shelter staff can provide details on which shelters are pet-friendly during each event.",
+      "reference": "Red Cross/PEMA Shelter Guide - Pet Policy, p. 11",
+      "has_answer": true,
+      "reasoning": "Cites the shelter pet policy as explained in the guide's shelter rules section."
+    },
+    {
+      "question": "Where are crisis shelters for domestic violence survivors during disasters, as referenced in the PA 211 Crisis Response and Shelter Services document?",
+      "ideal_answer": "The PA 211 Crisis Response and Shelter Services document lists YWCA Safe Haven as a 24/7 secure shelter for domestic violence survivors in Harrisburg, with transportation and trauma support available during disasters.",
+      "reference": "PA 211 Crisis Response and Shelter Services - Domestic Violence, p. 20",
+      "has_answer": true,
+      "reasoning": "Draws directly from the crisis shelter and support section."
+    },
+    {
+      "question": "What are the recommended first aid or urgent care alternatives when local hospitals are over capacity, per the PEMA Emergency Medical Resources PDF?",
+      "ideal_answer": "The PEMA Emergency Medical Resources PDF recommends seeking mobile medical units or urgent care pop-ups coordinated by UPMC or Penn State Health, which are activated when hospitals are at capacity. Locations rotate and are announced through 211 and local emergency alerts.",
+      "reference": "PEMA Emergency Medical Resources - Urgent Care, p. 28",
+      "has_answer": true,
+      "reasoning": "Lists alternatives and response protocol for medical surge events."
+    },
+    {
+      "question": "According to the PA 211 Medication Emergency FAQ, how can individuals get emergency insulin or prescription refills during a disaster?",
+      "ideal_answer": "The PA 211 Medication Emergency FAQ states that residents can contact 211 to be referred to local clinics like Hamilton Health Center, which are authorized for prescription replacement. Emergency pharmacy partners can provide insulin refills with proof of need.",
+      "reference": "PA 211 Medication Emergency FAQ, p. 7",
+      "has_answer": true,
+      "reasoning": "Gives the process and names clinics cited in the FAQ."
+    },
+    {
+      "question": "What mental health hotlines or crisis counseling resources are highlighted in the Disaster Behavioral Health section of the PA 211 Emergency Manual?",
+      "ideal_answer": "The Disaster Behavioral Health section lists SAMHSA’s Disaster Distress Helpline (1-800-985-5990) and the Dauphin County Mental Health Crisis Intervention hotline as primary mental health resources after a disaster.",
+      "reference": "PA 211 Emergency Manual - Disaster Behavioral Health, p. 34",
+      "has_answer": true,
+      "reasoning": "Highlights actual hotline numbers and agency names as given in the manual."
+    },
+    {
+      "question": "Where does the PEMA Winter Emergency Guide recommend residents go to stay warm during an extended blackout in Harrisburg?",
+      "ideal_answer": "The PEMA Winter Emergency Guide recommends John Hall Community Center and other local heating centers as warming locations during a blackout, with transit services for those with mobility needs.",
+      "reference": "PEMA Winter Emergency Guide - Warming Centers, p. 5",
+      "has_answer": true,
+      "reasoning": "References the guide's warming center list and accessibility notes."
+    },
+    {
+      "question": "How does PA 211 recommend accessing communication or alert services if phone or internet is down, as detailed in their Disaster Communication Toolkit?",
+      "ideal_answer": "The Disaster Communication Toolkit recommends using battery-powered radios for emergency broadcasts and visiting local libraries or shelters equipped with 211 information terminals if phone or internet service is unavailable.",
+      "reference": "PA 211 Disaster Communication Toolkit, p. 16",
+      "has_answer": true,
+      "reasoning": "Summarizes communication options in loss-of-connectivity scenarios."
+    },
+    {
+      "question": "What evacuation resources are described for people with mobility disabilities in Harrisburg, per the PEMA Disability Support and Evacuation Procedures PDF?",
+      "ideal_answer": "According to the PEMA Disability Support and Evacuation Procedures PDF, residents using wheelchairs should contact 211 to coordinate accessible transportation through Access or EMS, and will be referred to ADA-accessible shelters.",
+      "reference": "PEMA Disability Support and Evacuation Procedures, p. 10",
+      "has_answer": true,
+      "reasoning": "Specifies procedures and transportation partners for people with disabilities."
+    },
+    {
+      "question": "According to PEMA Flood Preparedness Resource, where can residents pick up free sandbags or flood protection supplies in Harrisburg?",
+      "ideal_answer": "PEMA Flood Preparedness Resource lists Harrisburg Public Works Yard (1820 Paxton St) as a primary sandbag distribution point during flood alerts. Residents are advised to monitor local emergency communications for supply availability.",
+      "reference": "PEMA Flood Preparedness Resource - Flood Supplies, p. 19",
+      "has_answer": true,
+      "reasoning": "Matches flood supply site listings in the official flood resource document."
+    },
+    {
+      "question": "What steps should be taken to file a FEMA disaster claim, as outlined in the PEMA FEMA Disaster Recovery and Claims Guide?",
+      "ideal_answer": "The PEMA FEMA Disaster Recovery and Claims Guide instructs residents to document damages with photos, call 211 for referral to FEMA application assistance centers, and contact Harrisburg Legal Services for help with documentation or appeals.",
+      "reference": "PEMA FEMA Disaster Recovery and Claims Guide, p. 14",
+      "has_answer": true,
+      "reasoning": "Lays out the claim process as described in the disaster recovery guide."
+    },
+    {
+      "question": "Does the PA 211 Disaster Support Guide indicate that undocumented immigrants can access shelters and food banks during emergencies in PA?",
+      "ideal_answer": "Yes. The PA 211 Disaster Support Guide notes that emergency shelters and food pantries coordinated by 211 are available regardless of immigration status, and that staff will connect clients to trusted organizations serving all residents.",
+      "reference": "PA 211 Disaster Support Guide - Inclusive Support, p. 24",
+      "has_answer": true,
+      "reasoning": "Draws on inclusive support policies stated in the guide."
+    },
+    {
+      "question": "Where can individuals with oxygen tanks or power-dependent medical equipment safely recharge during outages, as mentioned in the PEMA Special Medical Needs Manual?",
+      "ideal_answer": "The PEMA Special Medical Needs Manual lists generator-equipped medical shelters and designated county sites where people with oxygen tanks or powered equipment can recharge safely. Clients should call 211 with details about their equipment for personalized support.",
+      "reference": "PEMA Special Medical Needs Manual, p. 18",
+      "has_answer": true,
+      "reasoning": "Refers to county- and shelter-based medical power backup policies."
+    },
+    {
+      "question": "What instructions does the PEMA Home Damage Assessment Guide give for reporting home damage after a storm?",
+      "ideal_answer": "The PEMA Home Damage Assessment Guide instructs residents to take photos of all damage, retain receipts for any repairs, and call 211 for links to local government or FEMA online reporting portals.",
+      "reference": "PEMA Home Damage Assessment Guide, p. 22",
+      "has_answer": true,
+      "reasoning": "Follows the reporting checklist and documentation instructions in the guide."
+    },
+    {
+      "question": "According to the PA 211 Infant and Family Emergency Assistance PDF, where can families get diapers and baby formula during a disaster in Harrisburg?",
+      "ideal_answer": "The PA 211 Infant and Family Emergency Assistance PDF lists Capital Area Head Start and United Way partner diaper banks as sources for diapers and emergency baby formula during disasters. Locations and hours are updated daily through 211.",
+      "reference": "PA 211 Infant and Family Emergency Assistance PDF, p. 27",
+      "has_answer": true,
+      "reasoning": "Cites direct resource and service names from the family assistance PDF."
+    },
+    {
+      "question": "Where does the PEMA Community Resource Guide suggest people can do laundry if home utilities are unavailable post-disaster?",
+      "ideal_answer": "The PEMA Community Resource Guide notes that mobile laundry programs and open laundromats near emergency shelters or community centers may be available after a disaster. Residents can call 211 for current locations and voucher availability.",
+      "reference": "PEMA Community Resource Guide - Laundry Services, p. 31",
+      "has_answer": true,
+      "reasoning": "Gives the official program types and instructions from the guide."
+    },
+    {
+      "question": "What options are presented in the PA 211 Disaster Recovery FAQ for temporary storage of personal belongings after flood-related displacement?",
+      "ideal_answer": "The PA 211 Disaster Recovery FAQ indicates that local storage units offering disaster discounts and churches or shelters providing temporary storage are available for those displaced by flooding. Ask about rental waivers and aid programs when calling 211.",
+      "reference": "PA 211 Disaster Recovery FAQ - Storage Assistance, p. 33",
+      "has_answer": true,
+      "reasoning": "Cites both storage unit and shelter-based storage programs from the FAQ."
+    },
+    {
+      "question": "Can I volunteer to help others in a disaster?",
+      "ideal_answer": "Yes! Call 2-1-1 or visit the PA VOAD website to sign up for: Debris removal crews, shelter assistance, and food and supply packaging. Training and background checks may be required.",
+      "reference": "ZIP 17104 - Volunteer Coordination",
+      "has_answer": true,
+      "reasoning": "Directly references PA 211 and VOAD volunteer resources."
+    },
+    {
+      "question": "How can older adults assess their personal needs before a disaster?",
+      "ideal_answer": "Older adults should review their medical, dietary, and mobility needs and consider who can help them during an emergency. FEMA recommends listing medical equipment, medications, dietary restrictions, and creating a list of emergency contacts. Visit Ready.gov/older-adults for a self-assessment worksheet.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Step 1",
+      "has_answer": true,
+      "reasoning": "Directly addresses the self-assessment step highlighted in FEMA's guide."
+    },
+    {
+      "question": "What steps should I take to create a family emergency communication plan?",
+      "ideal_answer": "Start by talking with your family and support network about how you will contact each other and where to meet if separated. Keep a list of emergency contacts in your wallet and post important numbers near your phone. Use the Make a Plan Form from Ready.gov.",
+      "reference": "Disaster Preparedness Guide for Older Adults - FAQ 1",
+      "has_answer": true,
+      "reasoning": "Derived from the communication plan checklist in the guide."
+    },
+    {
+      "question": "If I have a disability, how can I ensure my emergency kit is accessible?",
+      "ideal_answer": "Include extra assistive devices, spare batteries, and medical supplies. Make sure your kit is easy to reach, and let your support network know where it is kept. Add a written list of your needs and equipment.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Additional Checklist",
+      "has_answer": true,
+      "reasoning": "Directly from the section on kit preparation for people with disabilities."
+    },
+    {
+      "question": "How can I stay informed during a disaster if I don't have a smartphone?",
+      "ideal_answer": "Listen to local radio or television for emergency broadcasts. Consider purchasing a weather radio. Join local community groups or CERTs to receive alerts.",
+      "reference": "Disaster Preparedness Guide for Older Adults - FAQ 3",
+      "has_answer": true,
+      "reasoning": "Matches communication recommendations in the FEMA guide."
+    },
+    {
+      "question": "What should I do if I am unable to evacuate during an emergency?",
+      "ideal_answer": "Shelter in place in the safest room in your home, and inform your support network of your situation. Keep a radio or phone handy for updates from officials.",
+      "reference": "Disaster Preparedness Guide for Older Adults - FAQ 2",
+      "has_answer": true,
+      "reasoning": "Directly addresses sheltering in place guidance."
+    },
+    {
+      "question": "What items should older adults include in an emergency preparedness kit?",
+      "ideal_answer": "Pack water, non-perishable food, medications, extra batteries, flashlight, important documents (insurance, IDs), pet supplies, a first aid kit, and a written list of your medications and contacts.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Emergency Kit",
+      "has_answer": true,
+      "reasoning": "Summarizes the kit checklist provided in the guide."
+    },
+    {
+      "question": "How can older adults engage their support network for disaster preparedness?",
+      "ideal_answer": "Share your emergency plan with family, friends, neighbors, and caregivers. Make sure someone has a spare key and knows how to help with your medical equipment. Practice your plan together regularly.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Step 3",
+      "has_answer": true,
+      "reasoning": "Represents the 'engage your support network' step."
+    },
+    {
+      "question": "What special steps should older adults in rural areas take to prepare for disasters?",
+      "ideal_answer": "Stock up on supplies, arrange transportation options in advance, create a backup communications plan for power/internet outages, and build a network of neighbors who can help during emergencies.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Rural Checklist",
+      "has_answer": true,
+      "reasoning": "Highlights rural-specific guidance from the FEMA guide."
+    },
+    {
+      "question": "Where can I get help building an emergency plan or kit if I have limited resources?",
+      "ideal_answer": "Look for free or discounted resources from local community centers, food banks, or PA 211. Many nonprofits and local governments offer help with building emergency kits for those in need.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Limited Resources",
+      "has_answer": true,
+      "reasoning": "Drawn from the guide's advice for low-income or resource-limited individuals."
+    },
+    {
+      "question": "How can I include my pet or service animal in my emergency plan?",
+      "ideal_answer": "Plan for pet food, medication, and supplies. Identify friends, family, or shelters that accept pets. Keep your pet’s information in your emergency kit and ask your support network if they can assist with pet care if needed.",
+      "reference": "Disaster Preparedness Guide for Older Adults - Pet Preparedness",
+      "has_answer": true,
+      "reasoning": "From the section on pet/service animal planning in the guide."
+    },
+  {
+    "question": "How can older adults assess their personal needs before a disaster?",
+    "ideal_answer": "Older adults should review their medical, dietary, and mobility needs and consider who can help them during an emergency. FEMA recommends listing medical equipment, medications, dietary restrictions, and creating a list of emergency contacts. Visit Ready.gov/older-adults for a self-assessment worksheet.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Step 1",
+    "has_answer": true,
+    "reasoning": "Directly addresses the self-assessment step highlighted in FEMA's guide."
+  },
+  {
+    "question": "What steps should I take to create a family emergency communication plan?",
+    "ideal_answer": "Start by talking with your family and support network about how you will contact each other and where to meet if separated. Keep a list of emergency contacts in your wallet and post important numbers near your phone. Use the Make a Plan Form from Ready.gov.",
+    "reference": "Disaster Preparedness Guide for Older Adults - FAQ 1",
+    "has_answer": true,
+    "reasoning": "Derived from the communication plan checklist in the guide."
+  },
+  {
+    "question": "If I have a disability, how can I ensure my emergency kit is accessible?",
+    "ideal_answer": "Include extra assistive devices, spare batteries, and medical supplies. Make sure your kit is easy to reach, and let your support network know where it is kept. Add a written list of your needs and equipment.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Additional Checklist",
+    "has_answer": true,
+    "reasoning": "Directly from the section on kit preparation for people with disabilities."
+  },
+  {
+    "question": "How can I stay informed during a disaster if I don't have a smartphone?",
+    "ideal_answer": "Listen to local radio or television for emergency broadcasts. Consider purchasing a weather radio. Join local community groups or CERTs to receive alerts.",
+    "reference": "Disaster Preparedness Guide for Older Adults - FAQ 3",
+    "has_answer": true,
+    "reasoning": "Matches communication recommendations in the FEMA guide."
+  },
+  {
+    "question": "What should I do if I am unable to evacuate during an emergency?",
+    "ideal_answer": "Shelter in place in the safest room in your home, and inform your support network of your situation. Keep a radio or phone handy for updates from officials.",
+    "reference": "Disaster Preparedness Guide for Older Adults - FAQ 2",
+    "has_answer": true,
+    "reasoning": "Directly addresses sheltering in place guidance."
+  },
+  {
+    "question": "What items should older adults include in an emergency preparedness kit?",
+    "ideal_answer": "Pack water, non-perishable food, medications, extra batteries, flashlight, important documents (insurance, IDs), pet supplies, a first aid kit, and a written list of your medications and contacts.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Emergency Kit",
+    "has_answer": true,
+    "reasoning": "Summarizes the kit checklist provided in the guide."
+  },
+  {
+    "question": "How can older adults engage their support network for disaster preparedness?",
+    "ideal_answer": "Share your emergency plan with family, friends, neighbors, and caregivers. Make sure someone has a spare key and knows how to help with your medical equipment. Practice your plan together regularly.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Step 3",
+    "has_answer": true,
+    "reasoning": "Represents the 'engage your support network' step."
+  },
+  {
+    "question": "What special steps should older adults in rural areas take to prepare for disasters?",
+    "ideal_answer": "Stock up on supplies, arrange transportation options in advance, create a backup communications plan for power/internet outages, and build a network of neighbors who can help during emergencies.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Rural Checklist",
+    "has_answer": true,
+    "reasoning": "Highlights rural-specific guidance from the FEMA guide."
+  },
+  {
+    "question": "Where can I get help building an emergency plan or kit if I have limited resources?",
+    "ideal_answer": "Look for free or discounted resources from local community centers, food banks, or PA 211. Many nonprofits and local governments offer help with building emergency kits for those in need.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Limited Resources",
+    "has_answer": true,
+    "reasoning": "Drawn from the guide's advice for low-income or resource-limited individuals."
+  },
+  {
+    "question": "How can I include my pet or service animal in my emergency plan?",
+    "ideal_answer": "Plan for pet food, medication, and supplies. Identify friends, family, or shelters that accept pets. Keep your pet\u2019s information in your emergency kit and ask your support network if they can assist with pet care if needed.",
+    "reference": "Disaster Preparedness Guide for Older Adults - Pet Preparedness",
+    "has_answer": true,
+    "reasoning": "From the section on pet/service animal planning in the guide."
+  }
+]
