@@ -444,9 +444,9 @@ if st.button("Run"):
     results = []
 
     if compare_choice == "OpenAI":
-        results = [("OpenAI",) + run_engine("OpenAI"))]
+        results = [("OpenAI",) + run_engine("OpenAI")]
     elif compare_choice == "Gemini":
-        results = [("Gemini",) + run_engine("Gemini"))]
+        results = [("Gemini",) + run_engine("Gemini")]
     elif compare_choice == "Compare: OpenAI vs Gemini":
         results = [("OpenAI",) + run_engine("OpenAI"), ("Gemini",) + run_engine("Gemini")]
     else:
