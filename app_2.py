@@ -11,7 +11,7 @@ import streamlit as st
 # -------------------------
 # Page config + Intro tab content
 # -------------------------
-st.set_page_config(page_title="PA 211 / PEMA RAG — OpenAI vs Gemini vs Both", layout="wide")
+st.set_page_config(page_title="PA 211 / PEMA RAG - OpenAI vs Gemini vs Both", layout="wide")
 
 INTRO_MD = """
 # PA 211 / PEMA RAG — Demo Guide
@@ -20,7 +20,7 @@ This demo answers questions using RAG (Retrieval-Augmented Generation) over the 
 
 ---
 
-## What’s in this demo?
+## What's in this demo?
 
 - PDF ingestion: All .pdf files at the repo root are loaded and chunked.
 - Two vector stores: One per model family (OpenAI and Gemini). Vectors are saved as .pkl files so subsequent runs are fast.
@@ -32,31 +32,6 @@ This demo answers questions using RAG (Retrieval-Augmented Generation) over the 
   - Combined: merge Standard + Contextual + (optional transforms) for a strong, balanced top-K set.
 - QA memory (optional): A small side index built from PA211_expanded_dataset.json. Its top hint can be added to the prompt (as a nudge), while the final answer must still be grounded in PDFs.
 - Comparison: Run OpenAI, Gemini, Both (merged) and see answers side-by-side with retrieval scores.
-
----
-
-## How it’s laid out
-
-Top controls
-- Retrieval mode selector (Standard / Contextual / Query Transformation / Adaptive / Combined)
-- Options:
-  - Enable transforms in Combined mode
-  - Use QA memory (PA211_expanded_dataset.json) for hints
-- Engine selector:
-  - OpenAI, Gemini, Compare: OpenAI vs Gemini, Compare: OpenAI vs Gemini vs Both
-- Top-K slider and a question text area.
-- Buttons to Rebuild/Refresh vectors (OpenAI/Gemini, Standard/Contextual, QA).
-  The first run is the only expensive one — after pickles exist, it is instant.
-
-Results panel
-- Columns for each engine you chose (OpenAI / Gemini / Both).
-- For each engine:
-  - Answer
-  - Avg similarity (top-K) — the mean cosine similarity of the retrieved chunks.
-  - Answer to Context similarity:
-    - Centroid: similarity between the answer embedding and the centroid of retrieved chunk embeddings.
-    - Max: max similarity between the answer embedding and any single retrieved chunk.
-  - Show retrieved context (expander) — the exact chunks and their similarity.
 
 ---
 
@@ -97,7 +72,7 @@ Retrieval pipelines (Standard / Contextual / Query-Transform / Adaptive / Combin
 
 - Adaptive
   Heuristic classify (Factual / Analytical / Opinion / Contextual) -> choose a strategy (rewrite, decompose, etc.) and pull from both standard + contextual stores -> answer.
-  Good default when you don’t know the shape of the question.
+  Good default when you don't know the shape of the question.
 
 - Combined
   Merge Standard + Contextual results; optional transforms. Often robust with reasonable cost.
@@ -126,79 +101,19 @@ Different embedding spaces and LLMs will surface different passages and phrasing
 
 ## Troubleshooting
 
-- "I don’t have enough info." -> Try Contextual or Combined, bump Top-K, or enable Query Transformation.
+- "I don't have enough info." -> Try Contextual or Combined, bump Top-K, or enable Query Transformation.
 - Empty or low similarity -> The answer likely is not in the PDFs; rephrase the question, or confirm the document actually contains it.
 - Slow first run -> Build/Refresh vectors once, then commit .pkl to the repo.
 """
 
-# Tabs up front
+# Create tabs ONCE
 tabs = st.tabs(["Introduction", "RAG Demo"])
 
 with tabs[0]:
     st.markdown(INTRO_MD)
-**Key ideas:**
-- **Chunking**: PDFs are split into overlapping chunks (default ~900 chars with 250 overlap).  
-- **Contextual chunks**: Each chunk is expanded with its neighbors to boost recall for cross-page topics.
-- **Two independent vector stores**: OpenAI’s embeddings power OpenAI retrieval; Gemini’s embeddings power Gemini retrieval. This isolates model behavior fairly.
-- **QA memory**: Used as a *hint* (optional) to nudge the model; final answer must still come from the PDFs.
-- **Similarity scores**: Quick sanity checks of how well the answer aligns with the retrieved evidence.
-
----
-
-## Retrieval modes (pipelines)
-
-- **Standard**  
-  Single query → retrieve top-K from **standard chunks** → answer.  
-  Use when you want fast, precise lookups.
-
-- **Contextual**  
-  Single query → retrieve top-K from **contextual chunks** → answer.  
-  Use when answers likely span multiple pages/sections.
-
-- **Query Transformation**  
-  Query → rewrite / step-back / decompose → retrieve for each → merge top-K → answer.  
-  Use for ambiguous or complex questions; costs a few extra LLM calls.
-
-- **Adaptive**  
-  Heuristic classify (Factual / Analytical / Opinion / Contextual) → choose a strategy (rewrite, decompose, etc.) and pull from **both** standard + contextual stores → answer.  
-  Good default when you don’t know the shape of the question.
-
-- **Combined**  
-  Merge Standard + Contextual results; optional transforms. Often robust with reasonable cost.
-
----
-
-## Compare OpenAI vs Gemini vs Both
-
-- **OpenAI**: uses OpenAI embeddings + OpenAI generation.
-- **Gemini**: uses Gemini embeddings + Gemini generation.
-- **Both (merged)**: merges contexts from both stores and synthesizes a single answer (uses OpenAI if available, else Gemini).
-
-**Why compare?**  
-Different embedding spaces and LLMs will surface different passages and phrasing. Side-by-side can reveal coverage gaps or strengths.
-
----
-
-## Performance notes
-
-- **Prebuilt vectors**: First build can take minutes; after that, it’s instant. Commit the `.pkl` files with the repo for demos.
-- **Gemini embedding is per-text**; OpenAI supports batching. That’s why OpenAI builds usually run faster.
-- Use **Contextual** or **Combined** for better recall; start with **Standard** if you need speed.
-- Turn off **QA memory** if you want purely PDF-grounded behavior with zero extra retrieval.
-
----
-
-## Troubleshooting
-
-- “I don’t have enough info.” → Try **Contextual** or **Combined**, bump `Top-K`, or enable **Query Transformation**.
-- Empty or low similarity → The answer likely isn’t in the PDFs; rephrase the question, or confirm the document actually contains it.
-- Slow first run → Build/Refresh vectors once, then commit `.pkl` to the repo.
-
----
-"""
 
 # -------------------------
-# Config
+# Config and secrets
 # -------------------------
 def list_repo_pdfs() -> List[str]:
     return sorted([f for f in os.listdir(".") if f.lower().endswith(".pdf")])
@@ -220,17 +135,16 @@ PREBUILT = {
 
 QA_DATA_FILE = "PA211_expanded_dataset.json"  # optional
 
-# -------------------------
 # Secrets (no widgets)
-# -------------------------
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
 if not OPENAI_API_KEY and not GEMINI_API_KEY:
-    st.error("Both OPENAI_API_KEY and GEMINI_API_KEY are missing. Add at least one in secrets.")
+    with tabs[1]:
+        st.error("Both OPENAI_API_KEY and GEMINI_API_KEY are missing. Add at least one in Streamlit secrets.")
     st.stop()
 
 # -------------------------
-# Lazy imports
+# Lazy imports for APIs
 # -------------------------
 def _lazy_openai():
     from openai import OpenAI
@@ -302,6 +216,7 @@ def embed_openai_many(texts: List[str], batch_size: int = 64) -> np.ndarray:
     vecs = []
     for i in range(0, len(texts), batch_size):
         chunk = [t[:3000] for t in texts[i:i+batch_size]]
+        # Retry wrapper
         for _ in range(4):
             try:
                 resp = client.embeddings.create(model=model, input=chunk)
@@ -311,6 +226,7 @@ def embed_openai_many(texts: List[str], batch_size: int = 64) -> np.ndarray:
             except Exception:
                 time.sleep(2)
         else:
+            # fallback zeros for this batch
             for _ in chunk:
                 vecs.append(np.zeros((1536,), dtype=np.float32))
     return np.vstack(vecs) if vecs else np.zeros((0, 1536), dtype=np.float32)
@@ -321,17 +237,24 @@ def embed_gemini_many(texts: List[str]) -> np.ndarray:
     vecs = []
     for t in texts:
         t2 = t[:3000]
-        for _ in range(3):
+        ok = False
+        for _ in range(4):
             try:
                 r = genai.embed_content(model=model, content=t2)
-                vec = r.get("embedding") if isinstance(r, dict) else getattr(r, "embedding", {}).get("values", [])
-                if isinstance(vec, dict) and "values" in vec:
-                    vec = vec["values"]
+                # google-generativeai can return dict or object; normalize
+                if isinstance(r, dict):
+                    vec = r.get("embedding")
+                    if isinstance(vec, dict) and "values" in vec:
+                        vec = vec["values"]
+                else:
+                    emb = getattr(r, "embedding", None)
+                    vec = getattr(emb, "values", []) if emb is not None else []
                 vecs.append(np.array(vec, dtype=np.float32))
+                ok = True
                 break
             except Exception:
                 time.sleep(1)
-        else:
+        if not ok:
             vecs.append(np.zeros((768,), dtype=np.float32))
     return np.vstack(vecs) if vecs else np.zeros((0, 768), dtype=np.float32)
 
@@ -370,7 +293,7 @@ def prebuilt_path(provider: str, mode: str) -> str:
 
 def load_prebuilt(provider: str, mode: str) -> Optional[VectorStore]:
     p = prebuilt_path(provider, mode)
-    if not p or not os.path.exists(p): 
+    if not p or not os.path.exists(p):
         return None
     try:
         with open(p, "rb") as f:
@@ -395,7 +318,7 @@ def save_prebuilt(provider: str, mode: str, store: VectorStore):
 def build_corpus_from_pdfs(all_text: Dict[str, str], mode: str) -> Tuple[List[str], List[dict]]:
     texts, metas = [], []
     for fname, full in all_text.items():
-        if not full: 
+        if not full:
             continue
         chunks = chunk_text(full)
         if mode == "contextual":
@@ -411,7 +334,7 @@ def build_corpus_from_qa(qa_items: List[dict]) -> Tuple[List[str], List[dict]]:
     for i, item in enumerate(qa_items):
         q = (item.get("question") or "").strip()
         a = (item.get("ideal_answer") or "").strip()
-        if not q and not a: 
+        if not q and not a:
             continue
         txt = f"[QA MEMORY] {q}\n{a}" if q else f"[QA MEMORY]\n{a}"
         texts.append(txt)
@@ -507,7 +430,7 @@ def classify_query_rule(query: str) -> str:
         return "Analytical"
     if any(w in q for w in ["opinion", "should i", "what do you think"]):
         return "Opinion"
-    if any(w in q for w in ["me", "my", "our", "we", "in ", "near me", "zip", "17104"]):
+    if any(w in q for w in ["me", "my", "our", "we", "near me", "zip", "17104"]):
         return "Contextual"
     return "Factual"
 
@@ -620,15 +543,9 @@ def retrieve_combined(engine: str, store_std: VectorStore, store_ctx: VectorStor
     return sorted(hits, key=lambda x: -x["similarity"])[:k]
 
 # -------------------------
-# TABS
+# UI - Demo tab
 # -------------------------
-tabs = st.tabs(["Introduction", "RAG Demo"])
-
-with tabs[0]:
-    st.markdown(INTRO_MD)
-
 with tabs[1]:
-    # ------------- UI (Demo) -------------
     st.title("PA 211 / PEMA RAG — OpenAI vs Gemini vs Both (Repo PDFs)")
 
     with st.expander("PDF status", expanded=False):
