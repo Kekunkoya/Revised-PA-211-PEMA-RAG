@@ -1,121 +1,81 @@
 import os
 import io
-import re
-import time
 import json
+import time
 import random
-from typing import List, Dict, Optional, Tuple
+import pickle
+from typing import List, Tuple, Optional, Dict
 
+import numpy as np
 import streamlit as st
 from dotenv import load_dotenv
-import numpy as np
 import fitz  # PyMuPDF
 
-# OpenAI SDK (v1+)
-from openai import OpenAI
-import openai
-
-# Gemini SDK
-import google.generativeai as genai
-import google.api_core.exceptions
-
-
 # =========================
-# Setup
+# App setup
 # =========================
-st.set_page_config(page_title="RAG: OpenAI vs Gemini (Context-Enriched, Query-Transform, Adaptive)", page_icon="🧪", layout="wide")
+st.set_page_config(page_title="PA 211 RAG — Repo PDFs (OpenAI vs Gemini vs Hybrid)", page_icon="📚", layout="wide")
 load_dotenv()
 
-# Prefer Streamlit Secrets on Cloud; fallback to env locally
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") if hasattr(st, "secrets") else None
-if not OPENAI_API_KEY:
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") else None
-if not GEMINI_API_KEY:
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Secrets / env only (no widgets)
+OPENAI_API_KEY = (st.secrets.get("OPENAI_API_KEY") if hasattr(st, "secrets") else None) or os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = (st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") else None) or os.getenv("GEMINI_API_KEY")
 
 if not OPENAI_API_KEY:
-    st.warning("Missing OPENAI_API_KEY (set in Streamlit Secrets or .env)")
+    st.warning("OPENAI_API_KEY not found in secrets or environment.")
 if not GEMINI_API_KEY:
-    st.warning("Missing GEMINI_API_KEY (set in Streamlit Secrets or .env)")
+    st.warning("GEMINI_API_KEY not found in secrets or environment.")
 
-# Initialize clients if keys present
-oai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
-# Writable data dir (works on Streamlit Cloud & local)
+# Writable data dir (for general caches)
 DATA_DIR = os.environ.get("STREAMLIT_DATA_DIR", "/mount/data")
 try:
     os.makedirs(DATA_DIR, exist_ok=True)
 except Exception:
-    # fallback to local relative dir
     DATA_DIR = "data"
     os.makedirs(DATA_DIR, exist_ok=True)
 
-STORE_OPENAI = os.path.join(DATA_DIR, "vector_store_openai.pkl")
-STORE_GEMINI = os.path.join(DATA_DIR, "vector_store_gemini.pkl")
-
-# Try to pre-load prompt guide if present
-PROMPT_GUIDE_DEFAULTS = [
-    os.path.join(DATA_DIR, "PA211_expanded_dataset.json"),
-    "PA211_expanded_dataset.json",
-    "/mnt/data/PA211_expanded_dataset.json",
-]
-def try_load_json(paths: list) -> Optional[list]:
-    for p in paths:
-        try:
-            if os.path.exists(p):
-                with open(p, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        return data
-        except Exception:
-            continue
-    return None
-
+# Default repo folders (you can change these)
+DEFAULT_PDF_DIR = os.environ.get("PDF_DIR", "./pdfs")
+DEFAULT_VECTOR_DIR = os.environ.get("VECTOR_DIR", "./vectors")
 
 # =========================
-# Core: Simple Vector Store
+# Session state init
 # =========================
-class SimpleVectorStore:
-    def __init__(self):
-        self.vectors: List[np.ndarray] = []
-        self.texts: List[str] = []
-        self.metadata: List[dict] = []
-
-    def add_item(self, text: str, embedding: List[float], metadata: Optional[dict] = None):
-        self.vectors.append(np.array(embedding, dtype=np.float32))
-        self.texts.append(text)
-        self.metadata.append(metadata or {})
-
-    def similarity_search(self, query_embedding: List[float], k: int = 4) -> List[Dict]:
-        if not self.vectors:
-            return []
-        q = np.array(query_embedding, dtype=np.float32)
-        nq = np.linalg.norm(q)
-        sims = []
-        for i, v in enumerate(self.vectors):
-            nv = np.linalg.norm(v)
-            score = 0.0 if nq == 0 or nv == 0 else float(np.dot(q, v) / (nq * nv))
-            sims.append((i, score))
-        sims.sort(key=lambda x: x[1], reverse=True)
-        out = []
-        for i in range(min(k, len(sims))):
-            idx, score = sims[i]
-            out.append({"text": self.texts[idx], "metadata": self.metadata[idx], "similarity": score})
-        return out
-
+for key, default in [
+    ("query", ""),
+    ("reference", ""),
+    ("prompt_guide", []),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 # =========================
-# Helpers: PDF, chunking
+# Utilities
 # =========================
-def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    pages = [page.get_text("text") for page in doc]
-    doc.close()
-    return "\n".join(pages)
+def ensure_api_key(service: str, key: Optional[str]):
+    if not key:
+        raise RuntimeError(f"{service} API key missing. Add it to Streamlit secrets or environment.")
+    return key
+
+def retry_wait(attempt: int, base: int = 6, cap: int = 90) -> int:
+    return min(cap, base * (attempt + 1))
+
+def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+    na, nb = np.linalg.norm(a), np.linalg.norm(b)
+    if na == 0 or nb == 0:
+        return 0.0
+    return float(np.dot(a, b) / (na * nb))
+
+# =========================
+# PDF & chunking
+# =========================
+def list_pdfs(pdf_dir: str) -> List[str]:
+    paths = []
+    for root, _, files in os.walk(pdf_dir):
+        for f in files:
+            if f.lower().endswith(".pdf"):
+                paths.append(os.path.join(root, f))
+    return sorted(paths)
 
 def extract_text_from_pdf_path(pdf_path: str) -> str:
     doc = fitz.open(pdf_path)
@@ -130,36 +90,48 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[st
         chunks.append(text[i:i+chunk_size])
     return chunks
 
+def pdfs_to_texts_from_dir(pdf_dir: str, chunk_size=1000, overlap=200) -> Tuple[List[str], str]:
+    pdf_paths = list_pdfs(pdf_dir)
+    texts = []
+    for path in pdf_paths:
+        try:
+            raw = extract_text_from_pdf_path(path)
+            chunks = chunk_text(raw, chunk_size, overlap)
+            for i, ch in enumerate(chunks):
+                if ch.strip():
+                    texts.append(f"[{os.path.basename(path)}#chunk_{i}]\n{ch}")
+        except Exception as e:
+            st.warning(f"Failed to read {path}: {e}")
+    return texts, f"pdfs_{os.path.basename(os.path.abspath(pdf_dir))}_{chunk_size}_{overlap}"
 
 # =========================
-# Embeddings: OpenAI vs Gemini
+# Embeddings (OpenAI & Gemini)
 # =========================
-def embed_openai_one(text: str, model: str = "text-embedding-3-small") -> List[float]:
-    # Basic retry/backoff
+def embed_openai_one(text: str, model: str = "text-embedding-3-small") -> np.ndarray:
+    ensure_api_key("OpenAI", OPENAI_API_KEY)
+    from openai import OpenAI
+    client = OpenAI(api_key=OPENAI_API_KEY)
     for attempt in range(6):
         try:
-            resp = oai_client.embeddings.create(model=model, input=[text])
-            return resp.data[0].embedding
-        except Exception as e:
-            # catch broadly to avoid SDK version mismatch on error class names
-            wait_s = min(60, 6 * (attempt + 1))
-            st.info(f"[OpenAI embed] Error or rate limit; waiting {wait_s}s… ({e})")
-            time.sleep(wait_s)
-    return [0.0]
+            resp = client.embeddings.create(model=model, input=[text])
+            vec = resp.data[0].embedding
+            return np.array(vec, dtype=np.float32)
+        except Exception:
+            time.sleep(retry_wait(attempt))
+    # Fallback vector size for text-embedding-3-small
+    return np.zeros((1536,), dtype=np.float32)
 
-def embed_openai_many(texts: List[str], model: str = "text-embedding-3-small") -> List[List[float]]:
+def embed_openai_many(texts: List[str], pause_s: int = 0, model: str = "text-embedding-3-small") -> np.ndarray:
+    if not texts:
+        return np.zeros((0, 1536), dtype=np.float32)
     embs = []
     for i, t in enumerate(texts):
-        if not t.strip():
-            embs.append([0.0])
-            continue
-        if i and i % 20 == 0:
-            time.sleep(5)
         embs.append(embed_openai_one(t, model=model))
-    return embs
+        if pause_s and (i + 1) % 15 == 0:
+            time.sleep(pause_s)  # rate-limit helper
+    return np.vstack(embs)
 
 def parse_gemini_embed(resp) -> List[float]:
-    # Some versions return {'embedding': {'values': [...]}}; others use attributes
     if isinstance(resp, dict):
         emb = resp.get("embedding")
         if isinstance(emb, dict) and "values" in emb:
@@ -170,165 +142,162 @@ def parse_gemini_embed(resp) -> List[float]:
         return resp.embedding.values  # type: ignore
     except Exception:
         pass
-    raise ValueError("Unexpected Gemini embedding response shape")
+    raise ValueError("Unexpected Gemini embedding shape")
 
-def embed_gemini_one(text: str, model: str = "models/embedding-001") -> List[float]:
+def embed_gemini_one(text: str, model: str = "models/embedding-001") -> np.ndarray:
+    ensure_api_key("Gemini", GEMINI_API_KEY)
+    import google.generativeai as genai
+    genai.configure(api_key=GEMINI_API_KEY)
     for attempt in range(6):
         try:
             resp = genai.embed_content(model=model, content=text)
-            return parse_gemini_embed(resp)
-        except google.api_core.exceptions.ResourceExhausted as e:
-            m = re.search(r"retry_delay\s*{\s*seconds:\s*(\d+)", str(e))
-            wait_s = int(m.group(1)) if m else min(90, 8 * (attempt + 1))
-            st.info(f"[Gemini embed] Rate limit; waiting {wait_s}s…")
-            time.sleep(wait_s)
-        except Exception as e:
-            st.info(f"[Gemini embed] Error; retrying… {e}")
-            time.sleep(min(90, 8 * (attempt + 1)))
-    return [0.0]
+            vec = parse_gemini_embed(resp)
+            return np.array(vec, dtype=np.float32)
+        except Exception:
+            time.sleep(retry_wait(attempt))
+    return np.zeros((768,), dtype=np.float32)
 
-def embed_gemini_many(texts: List[str], model: str = "models/embedding-001") -> List[List[float]]:
+def embed_gemini_many(texts: List[str], pause_s: int = 0, model: str = "models/embedding-001") -> np.ndarray:
+    if not texts:
+        return np.zeros((0, 768), dtype=np.float32)
     embs = []
     for i, t in enumerate(texts):
-        if not t.strip():
-            embs.append([0.0])
-            continue
-        if i and i % 20 == 0:
-            time.sleep(5)
         embs.append(embed_gemini_one(t, model=model))
-    return embs
-
+        if pause_s and (i + 1) % 15 == 0:
+            time.sleep(pause_s)
+    return np.vstack(embs)
 
 # =========================
-# LLM Calls (generation) + helpers used by different pipelines
+# LLM Generation
 # =========================
-def call_openai(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0.2) -> str:
+def call_openai(prompt: str, model: str = "gpt-4o-mini", temperature: float = 0.0) -> str:
+    ensure_api_key("OpenAI", OPENAI_API_KEY)
+    from openai import OpenAI
+    client = OpenAI(api_key=OPENAI_API_KEY)
     for attempt in range(6):
         try:
-            resp = oai_client.chat.completions.create(
+            resp = client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant. Use only the provided context. If unsure, say you don't know."},
+                    {"role": "system", "content": "Answer only with the provided context. If unsure, say you don't know."},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=temperature,
             )
             return (resp.choices[0].message.content or "").strip()
-        except Exception as e:
-            wait_s = min(90, 8 * (attempt + 1))
-            st.info(f"[OpenAI gen] Error or rate limit; waiting {wait_s}s… ({e})")
-            time.sleep(wait_s)
+        except Exception:
+            time.sleep(retry_wait(attempt))
     return "ERROR: generation failed."
 
-def call_gemini(prompt: str, model: str = "gemini-2.0-flash", temperature: float = 0.2) -> str:
+def call_gemini(prompt: str, model: str = "gemini-2.0-flash", temperature: float = 0.0) -> str:
+    ensure_api_key("Gemini", GEMINI_API_KEY)
+    import google.generativeai as genai
+    genai.configure(api_key=GEMINI_API_KEY)
     mdl = genai.GenerativeModel(model)
     for attempt in range(6):
         try:
             resp = mdl.generate_content(prompt, generation_config=genai.GenerationConfig(temperature=temperature))
             return (resp.text or "").strip()
-        except google.api_core.exceptions.ResourceExhausted as e:
-            m = re.search(r"retry_delay\s*{\s*seconds:\s*(\d+)", str(e))
-            wait_s = int(m.group(1)) if m else min(90, 8 * (attempt + 1))
-            st.info(f"[Gemini gen] Rate limit; waiting {wait_s}s…")
-            time.sleep(wait_s)
-        except Exception as e:
-            st.info(f"[Gemini gen] Error; retrying… {e}")
-            time.sleep(min(90, 8 * (attempt + 1)))
+        except Exception:
+            time.sleep(retry_wait(attempt))
     return "ERROR: generation failed."
 
+# =========================
+# Vector I/O (prebuilt pickles)
+# =========================
+def vector_file_for(provider: str, vector_dir: str) -> str:
+    os.makedirs(vector_dir, exist_ok=True)
+    base = "openai_vectors.pkl" if provider == "OpenAI" else "gemini_vectors.pkl"
+    return os.path.join(vector_dir, base)
+
+def save_vectors(provider: str, vector_dir: str, embeddings: np.ndarray, texts: List[str]):
+    path = vector_file_for(provider, vector_dir)
+    with open(path, "wb") as f:
+        pickle.dump({
+            "provider": provider,
+            "model": "text-embedding-3-small" if provider == "OpenAI" else "models/embedding-001",
+            "embeddings": embeddings,
+            "texts": texts
+        }, f)
+
+def load_vectors(provider: str, vector_dir: str) -> Optional[Dict]:
+    path = vector_file_for(provider, vector_dir)
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "rb") as f:
+            obj = pickle.load(f)
+        if obj.get("provider") == provider and "embeddings" in obj and "texts" in obj:
+            return obj
+    except Exception as e:
+        st.warning(f"Failed to load vectors from {path}: {e}")
+    return None
 
 # =========================
-# Pipelines
-#   1) Context-Enriched RAG
-#   2) Query Transform RAG (rewrite/step-back/decompose)
-#   3) Adaptive RAG (classify → choose strategy)
+# Retrieval + pipelines
 # =========================
+def retrieve_similar(query: str, embeddings: np.ndarray, texts: List[str], provider: str, k: int) -> Tuple[np.ndarray, np.ndarray]:
+    q_emb = embed_openai_one(query) if provider == "OpenAI" else embed_gemini_one(query)
+    norms = np.linalg.norm(embeddings, axis=1) * (np.linalg.norm(q_emb) + 1e-9) + 1e-9
+    sims = (embeddings @ q_emb) / norms
+    order = np.argsort(sims)[::-1][:k]
+    return order, sims[order]
 
-# ---- Query transforms ----
-def qt_rewrite(query: str, provider: str) -> str:
-    prompt = f"Rewrite this query to be clearer and more specific. Keep it short.\nQuery: {query}"
-    if provider == "openai":
-        return call_openai(prompt, temperature=0)
-    else:
-        return call_gemini(prompt, temperature=0)
+def context_enriched_answer(provider: str, query: str, top_texts: List[str]) -> str:
+    joined = "\n\n".join(top_texts)
+    brief_prompt = f"Create a concise brief (5-8 bullets) of key facts to answer.\n\nQuestion: {query}\n\nContext:\n{joined}\n\nBrief:"
+    brief = call_openai(brief_prompt) if provider == "OpenAI" else call_gemini(brief_prompt)
+    final_ctx = f"Brief:\n{brief}\n\n---\n\n{joined}"
+    prompt = f"Answer using only this context.\n\nContext:\n{final_ctx}\n\nQuestion: {query}\nAnswer:"
+    return call_openai(prompt) if provider == "OpenAI" else call_gemini(prompt)
 
-def qt_step_back(query: str, provider: str) -> str:
-    prompt = f"Produce a single 'step-back' question: the higher-level question whose answer helps answer the original.\nOriginal: {query}\nStep-back:"
-    if provider == "openai":
-        return call_openai(prompt, temperature=0)
-    else:
-        return call_gemini(prompt, temperature=0)
+def qt_rewrite(provider: str, query: str) -> str:
+    p = f"Rewrite this query to be clearer and specific. Keep it short.\nQuery: {query}"
+    return call_openai(p) if provider == "OpenAI" else call_gemini(p)
 
-def qt_decompose(query: str, provider: str, n: int = 3) -> List[str]:
-    prompt = f"Break the query into {n} short sub-questions (one per line).\nQuery: {query}\nSub-questions:"
-    raw = call_openai(prompt, temperature=0) if provider == "openai" else call_gemini(prompt, temperature=0)
+def qt_step_back(provider: str, query: str) -> str:
+    p = f"Produce a single step-back question (the higher-level question that helps answer the original).\nOriginal: {query}\nStep-back:"
+    return call_openai(p) if provider == "OpenAI" else call_gemini(p)
+
+def qt_decompose(provider: str, query: str, n: int = 3) -> List[str]:
+    p = f"Break the query into {n} short sub-questions (one per line).\nQuery: {query}\nSub-questions:"
+    raw = call_openai(p) if provider == "OpenAI" else call_gemini(p)
     subs = [s.strip("- ").strip() for s in raw.splitlines() if s.strip()]
     return subs[:n] if subs else [query]
 
-
-# ---- Retrieval helpers ----
-def retrieve(provider: str, query: str, store: SimpleVectorStore, k: int = 4):
-    if provider == "openai":
-        q_emb = embed_openai_one(query)
-    else:
-        q_emb = embed_gemini_one(query)
-    return store.similarity_search(q_emb, k=k)
-
-def generate(provider: str, query: str, passages: List[Dict]) -> str:
-    context = "\n\n---\n\n".join([p["text"] for p in passages]) if passages else ""
-    if provider == "openai":
-        prompt = f"Context:\n{context}\n\nQuestion: {query}"
-        return call_openai(prompt, temperature=0.2)
-    else:
-        prompt = f"You are a helpful assistant. Use only the provided context. If unsure, say you don't know.\n\nContext:\n{context}\n\nQuestion: {query}"
-        return call_gemini(prompt, temperature=0.2)
-
-# 1) Context-Enriched RAG: summarize/condense retrieved passages first
-def context_enriched(provider: str, query: str, store: SimpleVectorStore, k: int = 4) -> Tuple[str, List[Dict]]:
-    hits = retrieve(provider, query, store, k=k)
-    # Condense context
-    brief = ""
-    if hits:
-        joined = "\n\n".join([h["text"] for h in hits])
-        condenser_prompt = f"Create a concise brief (5-8 bullet points) capturing key facts needed to answer the question.\n\nQuestion: {query}\n\nContext:\n{joined}\n\nBrief:"
-        brief = call_openai(condenser_prompt, temperature=0.2) if provider == "openai" else call_gemini(condenser_prompt, temperature=0.2)
-        # use brief as additional leading context
-        hits = [{"text": f"Brief:\n{brief}", "metadata": {"source":"brief"}, "similarity": 1.0}] + hits
-    answer = generate(provider, query, hits)
-    return answer, hits
-
-# 2) Query-Transform RAG
-def query_transform(provider: str, query: str, store: SimpleVectorStore, k: int = 4, mode: str = "rewrite") -> Tuple[str, List[Dict], Dict]:
-    info = {}
+def query_transform_answer(provider: str, query: str, embeddings: np.ndarray, texts: List[str], k: int, mode: str):
     if mode == "rewrite":
-        t = qt_rewrite(query, provider)
-        info["transformed"] = t
-        hits = retrieve(provider, t, store, k=k)
-        answer = generate(provider, query, hits)
-        return answer, hits, info
+        t = qt_rewrite(provider, query)
+        idxs, _ = retrieve_similar(t, embeddings, texts, provider, k)
+        ctx = "\n\n".join([texts[i] for i in idxs])
+        prompt = f"Context:\n{ctx}\n\nQuestion: {query}\nAnswer:"
+        ans = call_openai(prompt) if provider == "OpenAI" else call_gemini(prompt)
+        return ans, {"transformed": t}, ctx
     elif mode == "step_back":
-        t = qt_step_back(query, provider)
-        info["step_back"] = t
-        hits = retrieve(provider, t, store, k=k)
-        answer = generate(provider, query, hits)
-        return answer, hits, info
-    else:  # decompose
-        subs = qt_decompose(query, provider, n=3)
-        info["sub_questions"] = subs
-        all_hits = []
+        t = qt_step_back(provider, query)
+        idxs, _ = retrieve_similar(t, embeddings, texts, provider, k)
+        ctx = "\n\n".join([texts[i] for i in idxs])
+        prompt = f"Context:\n{ctx}\n\nQuestion: {query}\nAnswer:"
+        ans = call_openai(prompt) if provider == "OpenAI" else call_gemini(prompt)
+        return ans, {"step_back": t}, ctx
+    else:
+        subs = qt_decompose(provider, query, n=min(3, k))
+        per = max(1, k // max(1, len(subs)))
+        all_idxs = []
         for s in subs:
-            all_hits += retrieve(provider, s, store, k=max(1, k//len(subs) or 1))
-        # dedupe by text
-        seen = set(); dedup = []
-        for h in all_hits:
-            if h["text"] not in seen:
-                dedup.append(h); seen.add(h["text"])
-        answer = generate(provider, query, dedup[:k])
-        return answer, dedup[:k], info
+            idxs, _ = retrieve_similar(s, embeddings, texts, provider, per)
+            all_idxs.extend(list(idxs))
+        seen=set(); uniq=[]
+        for i in all_idxs:
+            if i not in seen:
+                uniq.append(i); seen.add(i)
+        ctx = "\n\n".join([texts[i] for i in uniq[:k]])
+        prompt = f"Context:\n{ctx}\n\nQuestion: {query}\nAnswer:"
+        ans = call_openai(prompt) if provider == "OpenAI" else call_gemini(prompt)
+        return ans, {"sub_questions": subs}, ctx
 
-# 3) Adaptive RAG
 def classify_query(provider: str, query: str) -> str:
-    prompt = f"""Classify the query into exactly one category:
+    p = f"""Classify the query into exactly one category:
 - Factual
 - Analytical
 - Opinion
@@ -337,407 +306,267 @@ def classify_query(provider: str, query: str) -> str:
 Query: {query}
 Return ONLY the category name.
 """
-    out = call_openai(prompt, temperature=0) if provider == "openai" else call_gemini(prompt, temperature=0)
+    out = call_openai(p) if provider == "OpenAI" else call_gemini(p)
     for c in ["Factual", "Analytical", "Opinion", "Contextual"]:
         if c.lower() in (out or "").lower():
             return c
     return "Factual"
 
-def adaptive(provider: str, query: str, store: SimpleVectorStore, k: int = 4, user_ctx: Optional[str] = None) -> Tuple[str, List[Dict], str]:
+def adaptive_answer(provider: str, query: str, embeddings: np.ndarray, texts: List[str], k: int, user_ctx: str):
     qtype = classify_query(provider, query)
     if qtype == "Factual":
-        t = qt_rewrite(query, provider)  # light enhancement
-        hits = retrieve(provider, t, store, k=k)
+        t = qt_rewrite(provider, query)
+        idxs, _ = retrieve_similar(t, embeddings, texts, provider, k)
+        ctx = "\n\n".join([texts[i] for i in idxs])
     elif qtype == "Analytical":
-        subs = qt_decompose(query, provider, n=3)
-        hits = []
+        subs = qt_decompose(provider, query, n=min(3, k))
+        per = max(1, k // max(1, len(subs)))
+        all_idxs = []
         for s in subs:
-            hits += retrieve(provider, s, store, k=max(1, k//len(subs) or 1))
-        # dedupe
-        seen=set(); dedup=[]
-        for h in hits:
-            if h["text"] not in seen:
-                dedup.append(h); seen.add(h["text"])
-        hits = dedup[:k]
+            idxs, _ = retrieve_similar(s, embeddings, texts, provider, per)
+            all_idxs.extend(list(idxs))
+        seen=set(); uniq=[]
+        for i in all_idxs:
+            if i not in seen:
+                uniq.append(i); seen.add(i)
+        ctx = "\n\n".join([texts[i] for i in uniq[:k]])
     elif qtype == "Opinion":
-        angles = qt_decompose(f"Suggest 3 distinct viewpoints on: {query}", provider, n=3)
-        hits = []
+        angles = qt_decompose(provider, f"Suggest 3 distinct viewpoints on: {query}", n=3)
+        all_idxs = []
         for a in angles:
-            hits += retrieve(provider, f"{query} {a}", store, k=1)
+            idxs, _ = retrieve_similar(f"{query} {a}", embeddings, texts, provider, 1)
+            all_idxs.extend(list(idxs))
+        ctx = "\n\n".join([texts[i] for i in all_idxs[:k]])
     else:  # Contextual
-        ctx_q = call_openai(f"Reformulate with context.\nQuery: {query}\nContext: {user_ctx}", temperature=0) if provider=="openai" else call_gemini(f"Reformulate with context.\nQuery: {query}\nContext: {user_ctx}", temperature=0)
-        hits = retrieve(provider, ctx_q, store, k=k)
-    answer = generate(provider, query, hits)
-    return answer, hits, qtype
+        reform = call_openai(f"Reformulate with context.\nQuery: {query}\nContext: {user_ctx}", temperature=0) if provider=="OpenAI" else call_gemini(f"Reformulate with context.\nQuery: {query}\nContext: {user_ctx}", temperature=0)
+        idxs, _ = retrieve_similar(reform, embeddings, texts, provider, k)
+        ctx = "\n\n".join([texts[i] for i in idxs])
 
+    prompt = f"Answer using only the context.\n\nContext:\n{ctx}\n\nQuestion: {query}\nAnswer:"
+    ans = call_openai(prompt) if provider == "OpenAI" else call_gemini(prompt)
+    return ans, qtype, ctx
+
+def combined_pipeline(provider: str, query: str, embeddings: np.ndarray, texts: List[str], k: int, user_ctx: str):
+    """Context-Enriched → Query-Transform (rewrite+decompose) → Adaptive-style consolidation."""
+    # 1) Context-enriched seed
+    idxs, _ = retrieve_similar(query, embeddings, texts, provider, min(k, 4))
+    seed_ctx = [texts[i] for i in idxs]
+
+    # 2) Query transform (rewrite + decompose)
+    rewrite = qt_rewrite(provider, query)
+    subs = qt_decompose(provider, query, n=min(3, k))
+    # gather contexts
+    ctx_parts = []
+    if seed_ctx:
+        ctx_parts.extend(seed_ctx)
+    # rewrite
+    r_idx, _ = retrieve_similar(rewrite, embeddings, texts, provider, min(k, 4))
+    ctx_parts.extend([texts[i] for i in r_idx])
+    # decompose
+    per = max(1, k // max(1, len(subs)))
+    all_idxs = []
+    for s in subs:
+        ix, _ = retrieve_similar(s, embeddings, texts, provider, per)
+        all_idxs.extend(list(ix))
+    seen=set(); uniq=[]
+    for i in all_idxs:
+        if i not in seen:
+            uniq.append(i); seen.add(i)
+    ctx_parts.extend([texts[i] for i in uniq[:k]])
+
+    # dedupe & cut
+    merged = []
+    seen_txt = set()
+    for t in ctx_parts:
+        key = t[:120]  # cheap dedupe
+        if key not in seen_txt:
+            merged.append(t)
+            seen_txt.add(key)
+    merged = merged[:max(k, 6)]
+
+    # 3) Adaptive classification + final answer
+    qtype = classify_query(provider, query)
+    final_ctx = "\n\n".join(merged)
+    prompt = f"Answer using only the context.\n\nContext:\n{final_ctx}\n\nQuestion: {query}\nAnswer:"
+    ans = call_openai(prompt) if provider == "OpenAI" else call_gemini(prompt)
+    return ans, qtype, final_ctx
 
 # =========================
-# Save / Load Index
+# Scoring
 # =========================
-def save_store(store: SimpleVectorStore, path: str):
-    import pickle
-    with open(path, "wb") as f:
-        pickle.dump(store, f)
-
-def load_store(path: str) -> Optional[SimpleVectorStore]:
-    import pickle
-    if not os.path.exists(path):
-        return None
-    with open(path, "rb") as f:
-        obj = pickle.load(f)
-    return obj if isinstance(obj, SimpleVectorStore) else None
-
-
-# =========================
-# Scoring (cosine similarity via OpenAI embeddings for consistency)
-# =========================
-def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
-    na, nb = np.linalg.norm(a), np.linalg.norm(b)
-    if na == 0 or nb == 0:
-        return 0.0
-    return float(np.dot(a, b) / (na * nb))
-
-def score_answer(answer: str, reference: Optional[str], fallback_context: Optional[str]) -> float:
-    if not oai_client:
+def score_answer(answer: str, fallback_context: str) -> float:
+    # Score in OpenAI embedding space vs reference if provided else vs context
+    if not OPENAI_API_KEY:
         return 0.0
     try:
-        ans_emb = np.array(embed_openai_one(answer), dtype=np.float32)
-        tgt = (reference or "").strip() or (fallback_context or "")
-        tgt_emb = np.array(embed_openai_one(tgt), dtype=np.float32)
+        ans_emb = embed_openai_one(answer)
+        tgt = (st.session_state.get("reference") or "").strip() or fallback_context
+        tgt_emb = embed_openai_one(tgt)
         return cosine_sim(ans_emb, tgt_emb)
     except Exception:
         return 0.0
 
+def cross_answer_similarity(ans_a: str, ans_b: str) -> float:
+    if not OPENAI_API_KEY:
+        return 0.0
+    try:
+        a = embed_openai_one(ans_a)
+        b = embed_openai_one(ans_b)
+        return cosine_sim(a, b)
+    except Exception:
+        return 0.0
 
 # =========================
-# UI
+# Sidebar controls (no API widgets)
 # =========================
-st.title("🧪 RAG Comparison — OpenAI vs Gemini")
-st.caption("Pipelines: Context-Enriched, Query-Transform (rewrite/step-back/decompose), Adaptive")
-
-# --- Prompt Guide (dataset) ---
-if "prompt_guide" not in st.session_state:
-    st.session_state.prompt_guide = try_load_json(PROMPT_GUIDE_DEFAULTS) or []
-
 with st.sidebar:
-    st.header("Prompt guide (dataset)")
-    st.caption("Load a JSON list with entries like: {'question': '...', 'ideal_answer': '...'}")
+    st.header("Sources (Repo Paths)")
+    pdf_dir = st.text_input("PDF folder (repo)", value=DEFAULT_PDF_DIR)
+    vector_dir = st.text_input("Vectors folder (repo)", value=DEFAULT_VECTOR_DIR)
+    rebuild_vectors = st.checkbox("Rebuild vectors even if found", value=False)
 
-    pg_file = st.file_uploader("Upload prompt guide JSON", type=["json"])
-    pg_path = st.text_input("Or JSON path", value=PROMPT_GUIDE_DEFAULTS[0])
-
-    colpg1, colpg2 = st.columns(2)
-    with colpg1:
-        load_pg = st.button("Load prompt guide")
-    with colpg2:
-        clear_pg = st.button("Clear")
-
-    if load_pg:
-        loaded = None
-        if pg_file is not None:
-            try:
-                loaded = json.load(pg_file)
-            except Exception as e:
-                st.warning(f"Could not parse uploaded JSON: {e}")
-        elif pg_path:
-            try:
-                with open(pg_path, "r", encoding="utf-8") as f:
-                    loaded = json.load(f)
-            except Exception as e:
-                st.warning(f"Could not open {pg_path}: {e}")
-        if isinstance(loaded, list):
-            st.session_state.prompt_guide = loaded
-            st.success(f"Loaded {len(loaded)} entries.")
-        else:
-            st.warning("JSON must be a list of objects with 'question' and (optionally) 'ideal_answer'.")
-    if clear_pg:
-        st.session_state.prompt_guide = []
-        st.info("Prompt guide cleared.")
-
-    if st.session_state.prompt_guide:
-        questions = [str(item.get("question", f"Q{i+1}"))[:140] for i, item in enumerate(st.session_state.prompt_guide)]
-        sel_idx = st.selectbox("Pick a sample question", list(range(len(questions))), format_func=lambda i: questions[i])
-        colf1, colf2 = st.columns(2)
-        with colf1:
-            use_sel = st.button("Use selected")
-        with colf2:
-            use_rand = st.button("Use random")
-        if use_sel and 0 <= sel_idx < len(st.session_state.prompt_guide):
-            item = st.session_state.prompt_guide[sel_idx]
-            st.session_state["query"] = item.get("question", "")
-            st.session_state["reference"] = item.get("ideal_answer", "")
-            st.success("Filled the fields with the selected item.")
-        if use_rand:
-            item = random.choice(st.session_state.prompt_guide)
-            st.session_state["query"] = item.get("question", "")
-            st.session_state["reference"] = item.get("ideal_answer", "")
-            st.success("Filled the fields with a random item.")
-
-    st.header("Indexing")
+    st.header("Chunking")
     chunk_size = st.number_input("Chunk size", 200, 4000, 1000, 100)
     overlap = st.number_input("Overlap", 0, 1000, 200, 50)
-    folder_path = st.text_input("Folder of PDFs (optional)", value=os.path.join(DATA_DIR, "pdfs"))
-    uploads = st.file_uploader("Or upload PDFs", type=["pdf"], accept_multiple_files=True)
-    build_oai = st.button("Build/Replace OpenAI Index")
-    build_gem = st.button("Build/Replace Gemini Index")
-    st.caption("Build both to compare side-by-side.")
 
-    st.header("Load/Save")
-    colA, colB = st.columns(2)
-    with colA:
-        save_oai = st.button("Save OpenAI Index")
-    with colB:
-        save_gem = st.button("Save Gemini Index")
-    colC, colD = st.columns(2)
-    with colC:
-        load_oai = st.button("Load OpenAI Index")
-    with colD:
-        load_gem = st.button("Load Gemini Index")
+    st.header("Rate-limit helper")
+    pause_s = st.slider("Pause between batches (seconds)", 0, 20, 6)
 
-# Session state stores
-if "store_openai" not in st.session_state:
-    st.session_state.store_openai = None
-if "store_gemini" not in st.session_state:
-    st.session_state.store_gemini = None
+# =========================
+# Main UI
+# =========================
+st.title("📚 PA 211 RAG — Repo PDFs (OpenAI vs Gemini vs Hybrid)")
+st.caption("Modes: Context-Enriched • Query-Transform • Adaptive • Combined (context+transform+adaptive). Uses repo folders for PDFs and vectors.")
 
-# Build indexes
-def build_index_from_uploads(files: List[io.BytesIO], chunk_size=1000, overlap=200, provider="openai") -> SimpleVectorStore:
-    store = SimpleVectorStore()
-    for f in files:
-        name = getattr(f, "name", "uploaded.pdf")
-        text = extract_text_from_pdf_bytes(f.read())
-        chunks = chunk_text(text, chunk_size, overlap)
-        embs = embed_openai_many(chunks) if provider=="openai" else embed_gemini_many(chunks)
-        for i, (ch, emb) in enumerate(zip(chunks, embs)):
-            if ch.strip():
-                store.add_item(ch, emb, {"source": name, "chunk_id": i})
-    return store
+col_q, col_r = st.columns([2, 1])
+with col_q:
+    query = st.text_area("Your question", key="query", height=120)
+with col_r:
+    st.markdown("*(Optional) Reference for scoring*")
+    reference = st.text_area("Reference answer", key="reference", height=120)
 
-def build_index_from_folder(folder: str, chunk_size=1000, overlap=200, provider="openai") -> SimpleVectorStore:
-    store = SimpleVectorStore()
-    if not os.path.isdir(folder):
-        return store
-    for fname in os.listdir(folder):
-        if not fname.lower().endswith(".pdf"):
-            continue
-        path = os.path.join(folder, fname)
-        text = extract_text_from_pdf_path(path)
-        chunks = chunk_text(text, chunk_size, overlap)
-        embs = embed_openai_many(chunks) if provider=="openai" else embed_gemini_many(chunks)
-        for i, (ch, emb) in enumerate(zip(chunks, embs)):
-            if ch.strip():
-                store.add_item(ch, emb, {"source": fname, "chunk_id": i})
-    return store
+col_top = st.columns(3)
+with col_top[0]:
+    mode = st.selectbox("RAG Mode", ["Context-Enriched", "Query-Transform", "Adaptive", "Combined"])
+with col_top[1]:
+    provider_choice = st.selectbox("Provider", ["OpenAI", "Gemini", "Both"])
+with col_top[2]:
+    top_k = st.slider("Top-K retrieved", 1, 10, 4)
 
-if build_oai:
-    s = SimpleVectorStore()
-    if uploads:
-        s = build_index_from_uploads(uploads, chunk_size, overlap, provider="openai")
-    elif folder_path and os.path.isdir(folder_path):
-        s = build_index_from_folder(folder_path, chunk_size, overlap, provider="openai")
-    st.session_state.store_openai = s
-    st.success("OpenAI index built.")
+user_ctx = st.text_input("User context (for Adaptive/Contextual)")
 
-if build_gem:
-    s = SimpleVectorStore()
-    if uploads:
-        s = build_index_from_uploads(uploads, chunk_size, overlap, provider="gemini")
-    elif folder_path and os.path.isdir(folder_path):
-        s = build_index_from_folder(folder_path, chunk_size, overlap, provider="gemini")
-    st.session_state.store_gemini = s
-    st.success("Gemini index built.")
+run_btn = st.button("Run")
 
-# Save/Load
-if save_oai and st.session_state.store_openai:
-    save_store(st.session_state.store_openai, STORE_OPENAI)
-    st.success(f"OpenAI index saved → {STORE_OPENAI}")
-if save_gem and st.session_state.store_gemini:
-    save_store(st.session_state.store_gemini, STORE_GEMINI)
-    st.success(f"Gemini index saved → {STORE_GEMINI}")
+# =========================
+# Build or load vectors
+# =========================
+def build_or_load(provider: str) -> Tuple[np.ndarray, List[str], str]:
+    # Try to load vectors first unless forced rebuild
+    if not rebuild_vectors:
+        loaded = load_vectors(provider, vector_dir)
+        if loaded and isinstance(loaded.get("embeddings"), np.ndarray) and isinstance(loaded.get("texts"), list):
+            return loaded["embeddings"], loaded["texts"], "loaded"
 
-if load_oai:
-    s = load_store(STORE_OPENAI)
-    if s and s.vectors:
-        st.session_state.store_openai = s
-        st.success(f"Loaded OpenAI index ({len(s.vectors)} vectors).")
+    # Build from PDFs in repo
+    texts, source_name = pdfs_to_texts_from_dir(pdf_dir, chunk_size, overlap)
+    st.info(f"Found {len(texts)} text chunks from PDFs in '{pdf_dir}'. Building {provider} embeddings…")
+    if provider == "OpenAI":
+        embs = embed_openai_many(texts, pause_s=pause_s)
     else:
-        st.warning("No saved OpenAI index found.")
-if load_gem:
-    s = load_store(STORE_GEMINI)
-    if s and s.vectors:
-        st.session_state.store_gemini = s
-        st.success(f"Loaded Gemini index ({len(s.vectors)} vectors).")
+        embs = embed_gemini_many(texts, pause_s=pause_s)
+
+    save_vectors(provider, vector_dir, embs, texts)
+    st.success(f"Saved vectors to {vector_file_for(provider, vector_dir)}")
+    return embs, texts, "built"
+
+def run_pipeline(provider: str, embeddings: np.ndarray, texts: List[str]) -> Dict[str, str]:
+    if mode == "Context-Enriched":
+        idxs, _ = retrieve_similar(query, embeddings, texts, provider, top_k)
+        picked = [texts[i] for i in idxs]
+        ans = context_enriched_answer(provider, query, picked)
+        ctx = "\n\n".join(picked)
+    elif mode == "Query-Transform":
+        # default to rewrite mode inside transform (or you could add a selector)
+        ans, info, ctx = query_transform_answer(provider, query, embeddings, texts, top_k, mode="rewrite")
+    elif mode == "Adaptive":
+        ans, qtype, ctx = adaptive_answer(provider, query, embeddings, texts, top_k, user_ctx)
+    else:  # Combined
+        ans, qtype, ctx = combined_pipeline(provider, query, embeddings, texts, top_k, user_ctx)
+
+    score = score_answer(ans or "", ctx or "")
+    return {"answer": ans, "context": ctx, "score": f"{score:.3f}"}
+
+# =========================
+# Run
+# =========================
+if run_btn:
+    if not os.path.isdir(pdf_dir):
+        st.error(f"PDF folder does not exist: {pdf_dir}")
     else:
-        st.warning("No saved Gemini index found.")
+        if provider_choice in ["OpenAI", "Both"]:
+            oai_embs, oai_texts, oai_status = build_or_load("OpenAI")
+        if provider_choice in ["Gemini", "Both"]:
+            gem_embs, gem_texts, gem_status = build_or_load("Gemini")
 
-st.divider()
-st.header("Ask once → Compare side-by-side")
+        if provider_choice == "OpenAI":
+            st.subheader("OpenAI")
+            res = run_pipeline("OpenAI", oai_embs, oai_texts)
+            st.write(res["answer"])
+            st.markdown(f"**Similarity score:** `{res['score']}`")
+            with st.expander("Context used"):
+                st.code(res["context"][:4000], language="markdown")
 
-# Bind inputs to session_state so the prompt guide can fill them
-query = st.text_input("Your question", key="query")
-reference = st.text_area("(Optional) Reference answer for scoring", height=120, key="reference")
-top_k = st.slider("Top-K passages", 1, 10, 4)
-pipeline = st.selectbox("Pipeline", ["Context-Enriched RAG", "Query Transform RAG", "Adaptive RAG"], index=0)
-qt_mode = st.selectbox("If Query Transform: mode", ["rewrite", "step_back", "decompose"], index=0, help="Only used when Pipeline=Query Transform RAG.")
-user_ctx = st.text_input("Optional user context (used by Adaptive's 'Contextual' branch)")
-pause_s = st.slider("Pause between API calls (sec) — increase if rate-limited", 0, 20, 6)
-go = st.button("Run")
+        elif provider_choice == "Gemini":
+            st.subheader("Gemini")
+            res = run_pipeline("Gemini", gem_embs, gem_texts)
+            st.write(res["answer"])
+            st.markdown(f"**Similarity score:** `{res['score']}`")
+            with st.expander("Context used"):
+                st.code(res["context"][:4000], language="markdown")
 
-# --- Retrieval + Answer generation wrappers ---
-def retrieve(provider: str, query: str, store: SimpleVectorStore, k: int = 4):
-    if provider == "openai":
-        q_emb = embed_openai_one(query)
-    else:
-        q_emb = embed_gemini_one(query)
-    return store.similarity_search(q_emb, k=k)
+        else:  # Both
+            c1, c2 = st.columns(2)
+            with c1:
+                st.subheader("OpenAI")
+                res_o = run_pipeline("OpenAI", oai_embs, oai_texts)
+                st.write(res_o["answer"])
+                st.markdown(f"**Similarity score:** `{res_o['score']}`")
+                with st.expander("Context used"):
+                    st.code(res_o["context"][:4000], language="markdown")
 
-def generate(provider: str, query: str, passages: List[Dict]) -> str:
-    context = "\n\n---\n\n".join([p["text"] for p in passages]) if passages else ""
-    if provider == "openai":
-        prompt = f"Context:\n{context}\n\nQuestion: {query}"
-        return call_openai(prompt, temperature=0.2)
-    else:
-        prompt = f"You are a helpful assistant. Use only the provided context. If unsure, say you don't know.\n\nContext:\n{context}\n\nQuestion: {query}"
-        return call_gemini(prompt, temperature=0.2)
+            time.sleep(max(0, pause_s // 2))  # small pause
 
-# Pipelines (redeclared for scoping clarity)
-def context_enriched(provider: str, query: str, store: SimpleVectorStore, k: int = 4) -> Tuple[str, List[Dict]]:
-    hits = retrieve(provider, query, store, k=k)
-    brief = ""
-    if hits:
-        joined = "\n\n".join([h["text"] for h in hits])
-        condenser_prompt = f"Create a concise brief (5-8 bullet points) capturing key facts needed to answer the question.\n\nQuestion: {query}\n\nContext:\n{joined}\n\nBrief:"
-        brief = call_openai(condenser_prompt, temperature=0.2) if provider == "openai" else call_gemini(condenser_prompt, temperature=0.2)
-        hits = [{"text": f"Brief:\n{brief}", "metadata": {"source":"brief"}, "similarity": 1.0}] + hits
-    answer = generate(provider, query, hits)
-    return answer, hits
+            with c2:
+                st.subheader("Gemini")
+                res_g = run_pipeline("Gemini", gem_embs, gem_texts)
+                st.write(res_g["answer"])
+                st.markdown(f"**Similarity score:** `{res_g['score']}`")
+                with st.expander("Context used"):
+                    st.code(res_g["context"][:4000], language="markdown")
 
-def query_transform(provider: str, query: str, store: SimpleVectorStore, k: int = 4, mode: str = "rewrite") -> Tuple[str, List[Dict], Dict]:
-    info = {}
-    if mode == "rewrite":
-        t = qt_rewrite(query, provider)
-        info["transformed"] = t
-        hits = retrieve(provider, t, store, k=k)
-        answer = generate(provider, query, hits)
-        return answer, hits, info
-    elif mode == "step_back":
-        t = qt_step_back(query, provider)
-        info["step_back"] = t
-        hits = retrieve(provider, t, store, k=k)
-        answer = generate(provider, query, hits)
-        return answer, hits, info
-    else:  # decompose
-        subs = qt_decompose(query, provider, n=3)
-        info["sub_questions"] = subs
-        all_hits = []
-        for s in subs:
-            all_hits += retrieve(provider, s, store, k=max(1, k//len(subs) or 1))
-        seen = set(); dedup = []
-        for h in all_hits:
-            if h["text"] not in seen:
-                dedup.append(h); seen.add(h["text"])
-        answer = generate(provider, query, dedup[:k])
-        return answer, dedup[:k], info
+            # Cross-model similarity and Hybrid consensus
+            st.markdown("---")
+            if res_o.get("answer") and res_g.get("answer"):
+                sim_ab = cross_answer_similarity(res_o["answer"], res_g["answer"])
+                st.markdown(f"**OpenAI ↔ Gemini Answer Similarity:** `{sim_ab:.3f}`")
 
-def adaptive(provider: str, query: str, store: SimpleVectorStore, k: int = 4, user_ctx: Optional[str] = None) -> Tuple[str, List[Dict], str]:
-    qtype = classify_query(provider, query)
-    if qtype == "Factual":
-        t = qt_rewrite(query, provider)
-        hits = retrieve(provider, t, store, k=k)
-    elif qtype == "Analytical":
-        subs = qt_decompose(query, provider, n=3)
-        hits = []
-        for s in subs:
-            hits += retrieve(provider, s, store, k=max(1, k//len(subs) or 1))
-        seen=set(); dedup=[]
-        for h in hits:
-            if h["text"] not in seen:
-                dedup.append(h); seen.add(h["text"])
-        hits = dedup[:k]
-    elif qtype == "Opinion":
-        angles = qt_decompose(f"Suggest 3 distinct viewpoints on: {query}", provider, n=3)
-        hits = []
-        for a in angles:
-            hits += retrieve(provider, f"{query} {a}", store, k=1)
-    else:
-        ctx_q = call_openai(f"Reformulate with context.\nQuery: {query}\nContext: {user_ctx}", temperature=0) if provider=="openai" else call_gemini(f"Reformulate with context.\nQuery: {query}\nContext: {user_ctx}", temperature=0)
-        hits = retrieve(provider, ctx_q, store, k=k)
-    answer = generate(provider, query, hits)
-    return answer, hits, qtype
+                # Hybrid consensus (uses whichever key you have, prefers OpenAI)
+                consensus_ctx = (res_o["context"] + "\n\n" + res_g["context"])[:8000]
+                consensus_prompt = f"Combine the evidence from both contexts and produce a single, concise answer.\n\nContext A:\n{res_o['context']}\n\nContext B:\n{res_g['context']}\n\nQuestion: {query}\nAnswer:"
+                if OPENAI_API_KEY:
+                    hybrid_ans = call_openai(consensus_prompt)
+                elif GEMINI_API_KEY:
+                    hybrid_ans = call_gemini(consensus_prompt)
+                else:
+                    hybrid_ans = "No API keys available for hybrid synthesis."
 
-def run_pipeline(provider: str, pipeline: str, query: str, store: SimpleVectorStore, top_k: int, user_ctx: Optional[str], qt_mode: str):
-    if pipeline == "Context-Enriched RAG":
-        ans, hits = context_enriched(provider, query, store, k=top_k)
-        meta = {"mode": "context_enriched"}
-    elif pipeline == "Query Transform RAG":
-        ans, hits, info = query_transform(provider, query, store, k=top_k, mode=qt_mode)
-        meta = {"mode": f"query_transform/{qt_mode}", **info}
-    else:
-        ans, hits, qtype = adaptive(provider, query, store, k=top_k, user_ctx=user_ctx or None)
-        meta = {"mode": "adaptive", "query_type": qtype}
-    return ans, hits, meta
+                hy_score = score_answer(hybrid_ans or "", consensus_ctx or "")
+                st.subheader("Hybrid (Consensus)")
+                st.write(hybrid_ans)
+                st.markdown(f"**Similarity score:** `{hy_score:.3f}`")
+                with st.expander("Hybrid context used"):
+                    st.code(consensus_ctx[:4000], language="markdown")
 
-# --- Run ---
-if go:
-    if not query.strip():
-        st.warning("Enter a question.")
-        st.stop()
-    if not (st.session_state.store_openai or st.session_state.store_gemini):
-        st.error("Build or load at least one index (OpenAI or Gemini).")
-        st.stop()
-
-    col1, col2 = st.columns(2)
-
-    # OpenAI side
-    with col1:
-        st.subheader("OpenAI RAG")
-        if st.session_state.store_openai:
-            ans_oai, hits_oai, meta_oai = run_pipeline("openai", pipeline, query, st.session_state.store_openai, top_k, user_ctx, qt_mode)
-            time.sleep(pause_s)
-            st.write(ans_oai if ans_oai else "—")
-            ctx_oai = "\n".join([h["text"] for h in hits_oai]) if hits_oai else ""
-            score_oai = score_answer(ans_oai or "", reference, ctx_oai)
-            st.markdown(f"**Similarity score:** `{score_oai:.3f}`")
-            if meta_oai:
-                st.caption(f"Meta: {meta_oai}")
-            with st.expander("Top passages (OpenAI index)"):
-                for i, h in enumerate(hits_oai, 1):
-                    meta = h.get("metadata", {})
-                    st.markdown(f"**{i}.** (sim={h['similarity']:.3f}) — {meta.get('source','?')}#{meta.get('chunk_id','?')}")
-                    st.code(h["text"][:1200], language="markdown")
-        else:
-            st.info("No OpenAI index loaded.")
-
-    # Gemini side
-    with col2:
-        st.subheader("Gemini RAG")
-        if st.session_state.store_gemini:
-            ans_gem, hits_gem, meta_gem = run_pipeline("gemini", pipeline, query, st.session_state.store_gemini, top_k, user_ctx, qt_mode)
-            time.sleep(pause_s)
-            st.write(ans_gem if ans_gem else "—")
-            ctx_gem = "\n".join([h["text"] for h in hits_gem]) if hits_gem else ""
-            score_gem = score_answer(ans_gem or "", reference, ctx_gem)
-            st.markdown(f"**Similarity score:** `{score_gem:.3f}`")
-            if meta_gem:
-                st.caption(f"Meta: {meta_gem}")
-            with st.expander("Top passages (Gemini index)"):
-                for i, h in enumerate(hits_gem, 1):
-                    meta = h.get("metadata", {})
-                    st.markdown(f"**{i}.** (sim={h['similarity']:.3f}) — {meta.get('source','?')}#{meta.get('chunk_id','?')}")
-                    st.code(h["text"][:1200], language="markdown")
-        else:
-            st.info("No Gemini index loaded.")
-
-    # Optional cross-answer similarity (OpenAI space)
-    if oai_client and st.session_state.store_openai and st.session_state.store_gemini:
-        try:
-            if ans_oai and ans_gem:
-                a_emb = np.array(embed_openai_one(ans_oai), dtype=np.float32)
-                b_emb = np.array(embed_openai_one(ans_gem), dtype=np.float32)
-                side_sim = float(np.dot(a_emb, b_emb) / (np.linalg.norm(a_emb) * np.linalg.norm(b_emb) + 1e-9))
-                st.info(f"Answer-to-answer similarity (OpenAI embedding): {side_sim:.3f}")
-        except Exception:
-            pass
-
+# Footer
 st.markdown("---")
-st.caption("Built from your notebooks: context-enriched (G04/04), query-transform (G07/07), adaptive (G12/12) — unified into one app. Now with Prompt Guide loader.")
+st.caption("Reads PDFs and (optionally) prebuilt vector pickles from repo folders. No API key widgets; uses Streamlit Secrets / env only.")
